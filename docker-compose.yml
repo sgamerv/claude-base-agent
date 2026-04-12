@@ -1,0 +1,32 @@
+# Docker Compose 配置 — 本地模拟控制平面 + MCP Server 双容器架构
+# 使用方式: docker compose up --build
+
+services:
+  # 控制平面 + 前端
+  control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    ports:
+      - "3000:3000"
+    environment:
+      - ZHIPU_API_KEY=${ZHIPU_API_KEY}
+      - MCP_SERVER_URL=http://mcp-server:3001
+    depends_on:
+      - mcp-server
+    restart: unless-stopped
+
+  # MCP Server (模拟 CDE 容器)
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    ports:
+      - "3001:3001"
+    environment:
+      - MCP_PORT=3001
+      - PROJECT_ROOT=/workspace
+    volumes:
+      # 挂载工作区到 CDE 容器
+      - ./workspace:/workspace
+    restart: unless-stopped

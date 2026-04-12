@@ -1,0 +1,16 @@
+# MCP Server Dockerfile (模拟 CDE 容器)
+FROM node:20-alpine
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY mcp-server/ ./mcp-server/
+
+# 创建工作区目录
+RUN mkdir -p /workspace
+
+EXPOSE 3001
+ENV MCP_PORT=3001
+ENV PROJECT_ROOT=/workspace
+
+CMD ["npx", "tsx", "mcp-server/index.ts"]
