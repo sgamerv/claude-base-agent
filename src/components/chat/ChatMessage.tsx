@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { ChatMessage as ChatMessageType, ToolCallInfo, DiffInfo } from "@/lib/types/chat";
+import type { ChatMessage as ChatMessageType, ToolCallInfo, DiffInfo, SelectOption } from "@/lib/types/chat";
 import DiffViewer from "@/components/common/DiffViewer";
 
 interface ChatMessageProps {
@@ -118,6 +118,159 @@ function ToolCallCard({ tc }: { tc: ToolCallInfo }) {
   );
 }
 
+/**
+ * Agent 提问区域（结构化选项 + 文本输入）
+ */
+function PendingInputArea({
+  pendingInput,
+  replyText,
+  setReplyText,
+  onReply,
+}: {
+  pendingInput: NonNullable<ChatMessageType["pendingInput"]>;
+  replyText: string;
+  setReplyText: (v: string) => void;
+  onReply: (toolCallId: string, answer: string) => void;
+}) {
+  const { question, toolCallId, options, multiple } = pendingInput;
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+
+  // 当有结构化选项时，清理 question 中重复的列表文本
+  const displayQuestion = options && options.length > 0
+    ? question.replace(/\n\s*[-*•]\s+.+(\n\s*[-*•]\s+.+)*/g, "").replace(/\n\s*\d+[.)]\s+.+(\n\s*\d+[.)]\s+.+)*/g, "").replace(/\n\s*例如：\s*/gi, "").trim()
+    : question;
+
+  const handleSelect = (value: string) => {
+    if (multiple) {
+      setSelectedValues((prev) =>
+        prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      );
+    } else {
+      setSelectedValues([value]);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (selectedValues.length > 0) {
+      onReply(toolCallId, selectedValues.join(", "));
+    }
+  };
+
+  const hasOptions = options && options.length > 0;
+
+  return (
+    <div className="mt-3 border-t border-zinc-200 dark:border-zinc-600 pt-3">
+      {/* 问题 */}
+      <div className="flex items-start gap-2 mb-3">
+        <span className="text-base">❓</span>
+        <p className="text-sm flex-1">{displayQuestion}</p>
+      </div>
+
+      {/* 选项卡片 */}
+      {hasOptions && (
+        <div className="space-y-2 mb-3">
+          {options!.map((opt) => {
+            const isSelected = selectedValues.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                onClick={() => handleSelect(opt.value)}
+                className={`w-full text-left rounded-lg border px-3 py-2.5 transition-colors ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-400"
+                    : "border-zinc-200 dark:border-zinc-600 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  {/* 选择指示器 */}
+                  <span className="mt-0.5 flex-shrink-0">
+                    {multiple ? (
+                      <span className={`inline-block w-4 h-4 rounded border ${
+                        isSelected
+                          ? "bg-blue-600 border-blue-600 text-white text-[10px] flex items-center justify-center"
+                          : "border-zinc-300 dark:border-zinc-500"
+                      }`}>
+                        {isSelected && "✓"}
+                      </span>
+                    ) : (
+                      <span className={`inline-block w-4 h-4 rounded-full border-2 ${
+                        isSelected
+                          ? "border-blue-600 dark:border-blue-400"
+                          : "border-zinc-300 dark:border-zinc-500"
+                      }`}>
+                        {isSelected && (
+                          <span className="block w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 m-auto mt-[3px]" />
+                        )}
+                      </span>
+                    )}
+                  </span>
+                  {/* 选项内容 */}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${
+                      isSelected ? "text-blue-700 dark:text-blue-300" : "text-zinc-800 dark:text-zinc-200"
+                    }`}>
+                      {opt.label}
+                    </span>
+                    {opt.description && (
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        {opt.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 确认按钮（有选项时显示） */}
+      {hasOptions && (
+        <div className="flex gap-2 mb-2">
+          <button
+            onClick={handleConfirm}
+            disabled={selectedValues.length === 0}
+            className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {multiple
+              ? `确认选择 (${selectedValues.length})`
+              : "确认选择"}
+          </button>
+        </div>
+      )}
+
+      {/* 文本输入（始终可用，允许自定义回复） */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={replyText}
+          onChange={(e) => setReplyText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && replyText.trim()) {
+              onReply(toolCallId, replyText.trim());
+              setReplyText("");
+            }
+          }}
+          placeholder={hasOptions ? "或输入自定义回复..." : "输入回复..."}
+          className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={() => {
+            if (replyText.trim()) {
+              onReply(toolCallId, replyText.trim());
+              setReplyText("");
+            }
+          }}
+          disabled={!replyText.trim()}
+          className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50 hover:bg-blue-700 transition-colors"
+        >
+          回复
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatMessage({
   message,
   onReply,
@@ -196,41 +349,14 @@ export default function ChatMessage({
           </div>
         )}
 
-        {/* Agent 提问 */}
+        {/* Agent 提问（结构化选项 + 文本输入） */}
         {message.pendingInput && (
-          <div className="mt-3 border-t border-zinc-200 dark:border-zinc-600 pt-3">
-            <div className="flex items-start gap-2 mb-2">
-              <span className="text-base">❓</span>
-              <p className="text-sm flex-1">{message.pendingInput.question}</p>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && replyText.trim()) {
-                    onReply(message.pendingInput!.toolCallId, replyText.trim());
-                    setReplyText("");
-                  }
-                }}
-                placeholder="输入回复..."
-                className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={() => {
-                  if (replyText.trim()) {
-                    onReply(message.pendingInput!.toolCallId, replyText.trim());
-                    setReplyText("");
-                  }
-                }}
-                disabled={!replyText.trim()}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50 hover:bg-blue-700 transition-colors"
-              >
-                回复
-              </button>
-            </div>
-          </div>
+          <PendingInputArea
+            pendingInput={message.pendingInput}
+            replyText={replyText}
+            setReplyText={setReplyText}
+            onReply={onReply}
+          />
         )}
 
         {/* 审批请求 */}

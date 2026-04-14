@@ -8,6 +8,8 @@
 import { toGLMTools } from "./tools";
 import { executeTool, type ToolResult } from "./tool-executor";
 import { getEnabledSkillTools, getEnabledSkillPromptAddons } from "../skill/registry";
+import { getMCPHub } from "../mcp/hub";
+import type { SelectOption } from "../types/chat";
 
 // GLM API 类型定义
 interface GLMMessage {
@@ -32,7 +34,7 @@ export interface AgentCallbacks {
   onThinkingEnd: (fullContent: string) => void;
   onToolCall: (toolCallId: string, toolName: string, input: Record<string, string>) => void;
   onToolResult: (toolName: string, result: ToolResult) => void;
-  onAskUser: (question: string, toolCallId: string) => Promise<string>;
+  onAskUser: (question: string, toolCallId: string, options?: SelectOption[], multiple?: boolean) => Promise<string>;
   onApprovalRequired: (command: string, toolCallId: string) => Promise<boolean>;
   /** write_file 执行后，推送 Diff 通知并等待用户确认。返回 true=接受, false=拒绝并回滚 */
   onDiffRequired: (filePath: string, originalContent: string, newContent: string, toolCallId: string) => Promise<boolean>;
@@ -47,7 +49,15 @@ const BASE_SYSTEM_PROMPT = `你是一个经验丰富的 AI 编程助手，运行
 2. 修改代码前，先读取相关文件了解上下文
 3. 遇到不确定的情况，主动向用户提问
 4. 给出的建议要具体、可执行
-5. 用中文回复用户`;
+5. 用中文回复用户
+
+【重要】使用 ask_user 工具时的规范：
+- 当需要用户从多个选项中选择时，必须使用 options 参数传递结构化选项列表，不要把选项写在 question 文本中
+- 每个 option 需要有 label（显示文本）和 value（选择值），可选 description（补充说明）
+- 单选用 multiple=false（默认），多选用 multiple=true
+- question 中只写提问的引导语，不要包含选项列表
+- 正确示例：question="请选择您遇到的问题类型", options=[{label:"🔧 技术问题",value:"技术问题",description:"如性能瓶颈、架构设计"}]
+- 错误示例：question="请选择问题类型：\n- 🔧 技术问题\n- 📊 业务问题"（不要这样写！）`;
 
 const MAX_ITERATIONS = 15;
 const GLM_API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
@@ -64,26 +74,54 @@ export class AgentOrchestrator {
   }
 
   /**
-   * 构建完整的 System Prompt（基础 + Skill Prompt Addons）
+   * 构建完整的 System Prompt（基础 + Skill Prompt Addons + MCP 工具提示）
    */
   private async buildSystemPrompt(): Promise<string> {
     const addons = await getEnabledSkillPromptAddons();
     const toolsDesc = addons.length > 0
       ? `\n\n你可以使用以下扩展能力：\n${addons.map((a, i) => `${i + 1}. ${a}`).join("\n")}`
       : "";
-    return BASE_SYSTEM_PROMPT + toolsDesc;
+
+    // Phase 9: 添加外部 MCP 工具提示
+    let mcpDesc = "";
+    const hub = getMCPHub();
+    if (hub) {
+      const mcpTools = hub.getAllToolDefinitions();
+      if (mcpTools.length > 0) {
+        mcpDesc = `\n\n你可以使用以下外部 MCP 工具：\n${mcpTools.map((t, i) => `${i + 1}. ${t.name} — ${t.description}`).join("\n")}`;
+      }
+    }
+
+    return BASE_SYSTEM_PROMPT + toolsDesc + mcpDesc;
   }
 
   /**
-   * 获取所有可用的工具定义（基础 + Skill 工具）
+   * 获取所有可用的工具定义（基础 + Skill 工具 + MCP Hub 外部工具）
    */
-  private async getAllToolDefinitions() {
+  private async getAllToolDefinitions(): Promise<Array<{
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  }>> {
     const skillTools = await getEnabledSkillTools();
-    return skillTools.map((t) => ({
+    const tools: Array<{
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    }> = skillTools.map((t) => ({
       name: t.name,
       description: t.description,
-      parameters: t.parameters,
+      parameters: t.parameters as Record<string, unknown>,
     }));
+
+    // Phase 9: 添加 MCP Hub 外部工具
+    const hub = getMCPHub();
+    if (hub) {
+      const mcpTools = hub.getAllToolDefinitions();
+      tools.push(...mcpTools);
+    }
+
+    return tools;
   }
 
   /**
@@ -192,7 +230,40 @@ export class AgentOrchestrator {
           // ask_user 特殊处理：挂起等待用户回复
           if (toolName === "ask_user") {
             const question = toolInput.question || "请提供更多信息";
-            const userAnswer = await callbacks.onAskUser(question, toolCall.id);
+            // Phase 8: 解析结构化选项
+            let options: SelectOption[] | undefined;
+            let multiple: boolean | undefined;
+            if (toolInput.options) {
+              try {
+                const rawOptions = typeof toolInput.options === "string"
+                  ? JSON.parse(toolInput.options)
+                  : toolInput.options;
+                if (Array.isArray(rawOptions)) {
+                  options = rawOptions.map((opt: Record<string, string>) => ({
+                    label: opt.label || opt.value || "",
+                    value: opt.value || opt.label || "",
+                    description: opt.description,
+                  }));
+                }
+              } catch {
+                // options 解析失败，忽略
+              }
+            }
+            if (String(toolInput.multiple) === "true") {
+              multiple = true;
+            }
+            // Phase 8 补充：当 LLM 未使用 options 参数但 question 中包含 Markdown 列表时，
+            // 自动提取为结构化选项，确保前端能以卡片形式展示
+            if (!options || options.length === 0) {
+              const extracted = extractOptionsFromQuestion(question);
+              if (extracted.options.length > 0) {
+                options = extracted.options;
+                if (multiple === undefined) {
+                  multiple = false;
+                }
+              }
+            }
+            const userAnswer = await callbacks.onAskUser(question, toolCall.id, options, multiple);
             result = userAnswer;
           }
           // write_file 特殊处理：先推送 Diff 等待确认，用户接受后才写入
@@ -404,4 +475,84 @@ export class AgentOrchestrator {
 
     return { fullContent, toolCalls };
   }
+}
+
+/**
+ * Phase 8 补充：从 question 文本中自动提取结构化选项
+ * 当 LLM 未使用 options 参数但把列表写在 question 中时触发
+ * 支持格式：
+ *   - 🔧 技术问题（如性能瓶颈）
+ *   - 📊 业务问题（如用户增长停滞）
+ *   - 项目A: 描述文本
+ *   1. 选项一
+ *   2. 选项二
+ */
+function extractOptionsFromQuestion(question: string): { options: SelectOption[] } {
+  const options: SelectOption[] = [];
+  const lines = question.split("\n");
+  
+  // 匹配常见的列表格式：
+  // - emoji 文本（描述）
+  // - dash 文本
+  // - 数字. 文本
+  const listItemRegex = /^\s*[-*•]\s+(.+)$/;
+  const numberedItemRegex = /^\s*\d+[.)]\s+(.+)$/;
+  
+  let foundListStart = -1;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const dashMatch = line.match(listItemRegex);
+    const numMatch = line.match(numberedItemRegex);
+    const match = dashMatch || numMatch;
+    
+    if (match) {
+      if (foundListStart === -1) foundListStart = i;
+      const rawText = match[1].trim();
+      
+      // 解析 emoji + 标签 + 描述
+      // 格式: "🔧 技术问题（如性能瓶颈、架构设计）"
+      // 或: "技术问题（如性能瓶颈）"
+      // 或: "技术问题: 描述文本"
+      const emojiMatch = rawText.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}])\s*(.+)$/u);
+      let label = rawText;
+      let description: string | undefined;
+      
+      if (emojiMatch) {
+        // 带有 emoji 前缀
+        const afterEmoji = emojiMatch[2].trim();
+        // 尝试分离标题和描述：括号或冒号分隔
+        const partsMatch = afterEmoji.match(/^(.+?)[（(：:]\s*(.+)[）)]?\s*$/);
+        if (partsMatch) {
+          label = emojiMatch[1] + " " + partsMatch[1].trim();
+          description = partsMatch[2].trim();
+        } else {
+          label = rawText;
+        }
+      } else {
+        // 无 emoji，尝试括号/冒号分隔
+        const partsMatch = rawText.match(/^(.+?)[（(：:]\s*(.+)[）)]?\s*$/);
+        if (partsMatch) {
+          label = partsMatch[1].trim();
+          description = partsMatch[2].trim();
+        }
+      }
+      
+      // value: 去掉 emoji 和括号描述的纯文本
+      const value = label.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/u, "").trim();
+      
+      options.push({
+        label,
+        value: value || label,
+        ...(description ? { description } : {}),
+      });
+    }
+  }
+  
+  // 至少需要 2 个选项才认为是有效列表
+  if (options.length < 2) {
+    return { options: [] };
+  }
+  
+  return { options };
 }

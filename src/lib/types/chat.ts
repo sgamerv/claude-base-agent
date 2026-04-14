@@ -1,6 +1,7 @@
 /**
  * 聊天消息类型定义
  * Phase 6: 增加 pendingDiff 支持 Diff 预览 + Accept/Reject
+ * Phase 8: 增加 SelectOption 支持结构化选项选择
  */
 
 export type MessageRole = "user" | "assistant" | "system";
@@ -28,6 +29,16 @@ export interface DiffInfo {
   toolCallId?: string;
 }
 
+/** 结构化选项 */
+export interface SelectOption {
+  /** 显示文本 */
+  label: string;
+  /** 选择值（发送给 Agent） */
+  value: string;
+  /** 选项描述（可选） */
+  description?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
@@ -41,6 +52,10 @@ export interface ChatMessage {
   pendingInput?: {
     question: string;
     toolCallId: string;
+    /** 结构化选项列表（可选） */
+    options?: SelectOption[];
+    /** 是否允许多选（默认 false，单选） */
+    multiple?: boolean;
   };
   /** 是否等待审批 */
   pendingApproval?: {

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/hooks/useSocket";
 import { useSessionStore } from "@/lib/store/session-store";
-import type { ToolCallInfo, DiffInfo } from "@/lib/types/chat";
+import type { ToolCallInfo, DiffInfo, SelectOption } from "@/lib/types/chat";
 import DiffViewer from "@/components/common/DiffViewer";
 
 interface AIPanelProps {
@@ -19,6 +19,122 @@ const QUICK_COMMANDS = [
   { label: "/test", description: "为当前文件生成测试" },
   { label: "/explain", description: "解释当前文件逻辑" },
 ];
+
+/**
+ * 编辑器入口的提问区域（紧凑版选项卡片）
+ */
+function AIPanelPendingInput({
+  pendingInput,
+  onReply,
+}: {
+  pendingInput: { question: string; toolCallId: string; options?: SelectOption[]; multiple?: boolean };
+  onReply: (toolCallId: string, answer: string) => void;
+}) {
+  const { question, toolCallId, options, multiple } = pendingInput;
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [customReply, setCustomReply] = useState("");
+
+  // 当有结构化选项时，清理 question 中重复的列表文本
+  const hasOptions = options && options.length > 0;
+  const displayQuestion = hasOptions
+    ? question.replace(/\n\s*[-*•]\s+.+(\n\s*[-*•]\s+.+)*/g, "").replace(/\n\s*\d+[.)]\s+.+(\n\s*\d+[.)]\s+.+)*/g, "").replace(/\n\s*例如：\s*/gi, "").trim()
+    : question;
+
+  const handleSelect = (value: string) => {
+    if (multiple) {
+      setSelectedValues((prev) =>
+        prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      );
+    } else {
+      setSelectedValues([value]);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (selectedValues.length > 0) {
+      onReply(toolCallId, selectedValues.join(", "));
+    }
+  };
+
+  return (
+    <div className="mt-2 mr-4">
+      <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1.5">{displayQuestion}</p>
+
+      {/* 选项卡片 */}
+      {hasOptions && (
+        <div className="space-y-1 mb-2">
+          {options!.map((opt) => {
+            const isSelected = selectedValues.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                onClick={() => handleSelect(opt.value)}
+                className={`w-full text-left rounded border px-2 py-1.5 transition-colors ${
+                  isSelected
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                    : "border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="flex-shrink-0 text-[10px]">
+                    {multiple ? (isSelected ? "☑" : "☐") : (isSelected ? "◉" : "○")}
+                  </span>
+                  <span className={`text-xs ${isSelected ? "text-blue-700 dark:text-blue-300 font-medium" : "text-zinc-700 dark:text-zinc-300"}`}>
+                    {opt.label}
+                  </span>
+                </div>
+                {opt.description && (
+                  <p className="text-[10px] text-zinc-400 ml-4 mt-0.5">{opt.description}</p>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 确认按钮 */}
+      {hasOptions && (
+        <button
+          onClick={handleConfirm}
+          disabled={selectedValues.length === 0}
+          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50 mb-1.5"
+        >
+          {multiple ? `确认 (${selectedValues.length})` : "确认"}
+        </button>
+      )}
+
+      {/* 文本输入 */}
+      <div className="flex gap-1">
+        <input
+          type="text"
+          value={customReply}
+          onChange={(e) => setCustomReply(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && customReply.trim()) {
+              onReply(toolCallId, customReply.trim());
+              setCustomReply("");
+            }
+          }}
+          className="flex-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          placeholder={hasOptions ? "自定义回复..." : "回复..."}
+          autoFocus={!hasOptions}
+        />
+        <button
+          onClick={() => {
+            if (customReply.trim()) {
+              onReply(toolCallId, customReply.trim());
+              setCustomReply("");
+            }
+          }}
+          disabled={!customReply.trim()}
+          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          回复
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps) {
   const {
@@ -106,7 +222,12 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
       updateLastAssistantMessage((msg) => ({
         ...msg,
         isThinking: false,
-        pendingInput: { question: data.question, toolCallId: data.toolCallId },
+        pendingInput: {
+          question: data.question,
+          toolCallId: data.toolCallId,
+          options: data.options,
+          multiple: data.multiple,
+        },
       }));
     },
     onApprovalRequired: (data) => {
@@ -348,38 +469,12 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
                 </div>
               ))}
 
-              {/* 提问 */}
+              {/* 提问（结构化选项 + 文本输入） */}
               {msg.pendingInput && (
-                <div className="mt-2 mr-4">
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">{msg.pendingInput.question}</p>
-                  <div className="flex gap-1">
-                    <input
-                      type="text"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const target = e.target as HTMLInputElement;
-                          if (target.value.trim()) {
-                            handleReply(msg.pendingInput!.toolCallId, target.value.trim());
-                          }
-                        }
-                      }}
-                      className="flex-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="回复..."
-                      autoFocus
-                    />
-                    <button
-                      onClick={() => {
-                        const inputEl = document.querySelector<HTMLInputElement>(`[data-pending="${msg.pendingInput!.toolCallId}"]`);
-                        if (inputEl?.value.trim()) {
-                          handleReply(msg.pendingInput!.toolCallId, inputEl.value.trim());
-                        }
-                      }}
-                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-                    >
-                      回复
-                    </button>
-                  </div>
-                </div>
+                <AIPanelPendingInput
+                  pendingInput={msg.pendingInput}
+                  onReply={handleReply}
+                />
               )}
 
               {/* 审批 */}

@@ -122,7 +122,12 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
       updateLastAssistantMessage((msg) => ({
         ...msg,
         isThinking: false,
-        pendingInput: { question: data.question, toolCallId: data.toolCallId },
+        pendingInput: {
+          question: data.question,
+          toolCallId: data.toolCallId,
+          options: data.options,
+          multiple: data.multiple,
+        },
       }));
     },
     onApprovalRequired: (data) => {

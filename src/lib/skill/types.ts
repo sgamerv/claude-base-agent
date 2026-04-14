@@ -1,6 +1,8 @@
 /**
  * Skill 系统类型定义
  * Phase 5: 可插拔能力扩展
+ * Phase 7: SKILL.md 包管理
+ * Phase 9: 外部 MCP 服务集成
  */
 
 export interface SkillToolDefinition {
@@ -14,8 +16,18 @@ export interface SkillToolDefinition {
     }>;
     required: string[];
   };
-  handler: "local" | "mcp"; // 执行方式：本地函数 or MCP 远程
+  handler: "local" | "mcp" | "external-mcp"; // 执行方式：本地函数 / MCP 远程 / 外部 MCP
   mcpTool?: string; // handler 为 mcp 时对应的 MCP 工具名
+  mcpServerId?: string; // Phase 9: handler 为 external-mcp 时指定外部 MCP Server ID
+}
+
+/** Skill 安装来源 */
+export interface SkillSource {
+  type: "market" | "zip" | "github" | "local" | "url";
+  url?: string; // GitHub URL 或 ZIP 下载 URL
+  ref?: string; // Git 分支/tag/commit
+  installedAt: number; // 安装时间
+  checksum?: string; // ZIP 包 SHA256 校验和
 }
 
 export interface Skill {
@@ -30,4 +42,8 @@ export interface Skill {
   systemPromptAddon?: string; // 注入到 System Prompt 的额外指令
   installedAt?: number; // 安装时间
   enabled: boolean; // 是否启用
+
+  // Phase 7: SKILL.md 包管理字段
+  source?: SkillSource; // 安装来源
+  skillMdPath?: string; // SKILL.md 文件在 skills/ 目录中的相对路径
 }

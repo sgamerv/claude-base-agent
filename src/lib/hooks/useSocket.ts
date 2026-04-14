@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import type { SelectOption } from "@/lib/types/chat";
 
 interface FileChangeEvent {
   sessionId: string;
@@ -18,13 +19,20 @@ interface FileChangeEvent {
   stats: { added: number; removed: number };
 }
 
+interface AskUserData {
+  question: string;
+  toolCallId: string;
+  options?: SelectOption[];
+  multiple?: boolean;
+}
+
 interface UseSocketOptions {
   sessionId: string;
   onThinkingDelta?: (delta: string) => void;
   onThinkingEnd?: (fullContent: string) => void;
   onToolCall?: (data: { toolCallId: string; toolName: string; input: Record<string, string> }) => void;
   onToolResult?: (data: { toolName: string; success: boolean; content: string }) => void;
-  onAskUser?: (data: { question: string; toolCallId: string }) => void;
+  onAskUser?: (data: AskUserData) => void;
   onApprovalRequired?: (data: { command: string; toolCallId: string }) => void;
   onFileChange?: (data: FileChangeEvent) => void;
   onFinalResponse?: (content: string) => void;

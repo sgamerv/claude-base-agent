@@ -1,9 +1,9 @@
 # AI-Powered 远程协作开发平台 (Cloud CDE Agent) 设计文档
 
-> **版本**: v1.7  
-> **日期**: 2026-04-12  
-> **状态**: Phase 6 完成  
-> **变更记录**: v1.7 — Phase 6 人机协作工作流开发完成（Diff 预览 + Accept/Reject + 双入口跳转）
+> **版本**: v3.0
+> **日期**: 2026-04-14
+> **状态**: Phase 9 开发完成（9E 安全扫描/加密待后续）
+> **变更记录**: v3.0 — Phase 9 外部 MCP 服务集成完成（MCPHub + Transport + API + 前端管理面板 + Skill external-mcp 路由）
 
 ---
 
@@ -1057,14 +1057,156 @@ npm install @anthropic-ai/sdk zod socket.io yjs
 - [x] 聊天入口：Diff 摘要卡片 + Accept/Reject
 - [x] 双入口间跳转（聊天 → 编辑器查看完整 Diff）
 
-### Phase 7: 协作与智能增强
+### Phase 7: Skill 包管理系统 — 业界 SKILL.md 兼容安装
+
+> 详细设计文档: [skill-package-system-design.md](./skill-package-system-design.md)
+
+- [x] **7A: SKILL.md 解析与 Prompt 注入（核心）** ✅
+  - [x] `types.ts` 新增 `SkillSource` 接口，`Skill` 增加 `source`、`skillMdPath` 字段
+  - [x] `parser.ts` SKILL.md 解析器（YAML frontmatter + Markdown 正文提取）
+  - [x] `registry.ts` 改造 `getEnabledSkillPromptAddons()` 支持 `skills/` 目录读取
+  - [x] `installer.ts` 安装引擎基础框架（先支持本地路径安装）
+  - [x] `scanner.ts` 安全扫描基础（文件大小/数量检查 + 危险脚本检测 + Prompt 注入检测）
+  - [x] `POST /api/skills/install` 安装 API（兼容 Phase 5 + 支持 source 安装）
+  - [x] `DELETE /api/skills/{id}` 扩展卸载逻辑（删除 `skills/` 目录）
+  - [x] 验证：创建 `skills/brainstorming/SKILL.md` 测试 Prompt 注入
+
+- [x] **7B: 多来源安装（ZIP + GitHub + URL）** ✅
+  - [x] `installFromZip()` ZIP 解压安装（adm-zip + 校验和）
+  - [x] `POST /api/skills/install/upload` ZIP 上传 API
+  - [x] `installFromGitHub()` GitHub 仓库安装（URL 解析 + GitHub API 递归下载）
+  - [x] `installFromUrl()` ZIP 下载链接安装
+  - [x] 安装前预览 API（`/api/skills/install` preview 模式）
+  - [x] 安全扫描增强（脚本危险模式检测 + Prompt 注入检测）
+
+- [x] **7C: 前端体验优化** ✅
+  - [x] 统一安装对话框（URL/GitHub / 本地路径 / ZIP 上传三 Tab 切换）
+  - [x] 安装预览：元数据 + 安全扫描结果展示
+  - [x] Skill 卡片来源标识（内置 / GitHub / ZIP / 本地 / SKILL.md）
+
+### Phase 8: 结构化选项交互 ✅
+
+> 详细设计文档: [structured-options-design.md](./structured-options-design.md)
+
+- [x] **8A: ask_user 结构化选项 — 后端** ✅
+  - [x] `chat.ts` — 新增 `SelectOption` 接口，`pendingInput` 增加 `options`/`multiple`
+  - [x] `tools.ts` — `ask_user` 工具增加 `options`/`multiple` 参数
+  - [x] `orchestrator.ts` — `onAskUser` 回调签名增加 `options`/`multiple`
+  - [x] `server.ts` — `agent_needs_input` 事件携带 `options`/`multiple`
+  - [x] `useSocket.ts` — `onAskUser` 数据类型扩展
+
+- [x] **8B: ask_user 结构化选项 — 前端** ✅
+  - [x] `ChatMessage.tsx` — 单选选项卡片（Radio）+ 多选选项卡片（Checkbox）+ 确认按钮
+  - [x] `ChatPanel.tsx` — `onAskUser` 存储选项数据
+  - [x] `AIPanel.tsx` — 编辑器入口紧凑版选项卡片
+  - [x] 向后兼容：无 `options` 时仍显示文本输入框
+
+### Phase 9: 外部 MCP 服务集成 ✅
+
+> 详细设计文档: [external-mcp-integration-design.md](./external-mcp-integration-design.md)
+
+#### 9A: MCP Hub 核心 + Transport 适配层 ✅
+
+- [x] **9A.1** 创建 `src/lib/mcp/types.ts` — MCPServerConfig、MCPServerConnection、MCPToolInfo 等类型定义
+- [x] **9A.2** 创建 `src/lib/mcp/config.ts` — 配置持久化（JSON 文件读写 `data/mcp-servers.json`）
+- [x] **9A.3** 创建 `src/lib/mcp/transport.ts` — Transport 接口 + SSETransport + SimpleHTTPTransport 实现
+  - SSETransport: 使用 `@modelcontextprotocol/sdk` 的 Client + SSEClientTransport
+  - SimpleHTTPTransport: 兼容内置 MCP Server 的 /call 端点
+  - connect() / listTools() / callTool() / healthCheck()
+- [x] **9A.4** 创建 `src/lib/mcp/hub.ts` — 核心逻辑
+  - initialize(): 加载配置 → 创建 Transport → 连接 → 刷新工具列表
+  - addServer() / removeServer() / toggleServer()
+  - executeTool(): 根据工具名前缀路由到对应连接
+  - getAllToolDefinitions(): 收集所有外部工具，转为 SkillToolDefinition 格式
+  - 内置 CDE 连接适配：将现有 MCPClient 包装为 Hub 的内置连接
+- [x] **9A.5** 更新 `tool-executor.ts` — initMCPClient 改为初始化 MCPHub（兼容降级）
+
+#### 9B: Tool Executor/Orchestrator 改造 + API Routes ✅
+
+- [x] **9B.1** 改造 `tool-executor.ts`
+  - 引入 MCPHub 单例
+  - 修改 `executeTool()`: Skill Local → MCPHub → Direct MCP Client → Local Fallback
+  - 修改 `initMCPClient()`: 初始化 MCPHub（含降级路径）
+- [x] **9B.2** 改造 `orchestrator.ts`
+  - `getAllToolDefinitions()`: 增加 `mcpHub.getAllToolDefinitions()`
+  - `buildSystemPrompt()`: 增加外部 MCP 工具的 Prompt 提示
+- [x] **9B.3** 创建 API Routes
+  - `GET /api/mcp/servers` — 返回所有 MCP Server 配置 + 状态
+  - `POST /api/mcp/servers` — 添加新 MCP Server（含测试连接）
+  - `DELETE /api/mcp/servers/{id}` — 删除
+  - `PATCH /api/mcp/servers/{id}` — 更新（启用/禁用/改 URL）
+  - `POST /api/mcp/servers/{id}/refresh` — 刷新工具列表
+  - `GET /api/mcp/servers/{id}/tools` — 获取工具列表
+  - `GET /api/mcp/tools` — 获取所有跨 Server 工具
+- [ ] **9B.4** Socket.IO 事件
+  - 新增 `mcp_server_status` 事件推送
+  - 新增 `mcp_tools_updated` 事件推送
+
+#### 9C: Skill 类型扩展 + SKILL.md 集成 ✅
+
+- [x] **9C.1** 扩展 `SkillToolDefinition`
+  - handler 联合类型增加 `"external-mcp"`
+  - 新增 `mcpServerId?: string` 字段
+- [x] **9C.2** 扩展 SKILL.md 解析器
+  - parser.ts: 解析 `mcp-servers` YAML 字段（待 SKILL.md 中实际使用时完善）
+- [x] **9C.3** 扩展 Skill Registry
+  - `getEnabledSkillTools()`: 注册 external-mcp 工具路由到 executor
+  - 检查引用的 MCP Server 是否可用，不可用时标记工具为降级状态
+- [x] **9C.4** 扩展 Skill Executor
+  - `executeSkillTool()`: 如果 `handler === "external-mcp"`，路由到 `mcpHub.executeTool()`
+  - `registerExternalMCPRoute()` / `clearExternalMCPRoutes()` 管理路由表
+
+#### 9D: 前端 MCP 管理面板 + 状态指示器改造 ✅
+
+- [x] **9D.1** 创建 MCP 管理页面 `/mcp`
+  - Server 列表：显示所有 MCP Server 配置 + 连接状态 + 工具数
+  - 添加对话框：输入名称/URL/传输协议/认证头
+  - 测试连接：添加前验证 MCP Server 可达性
+  - 删除/启禁用：管理已有配置
+- [x] **9D.2** 创建 MCPStatusBadge 组件
+  - 通过 API 获取所有 MCP Server 状态
+  - 显示: 🔌 MCP: 🟢 CDE | 🟢 PostgreSQL | 🔴 Slack
+- [x] **9D.3** 首页添加 MCP 状态指示器和「管理 MCP 服务」入口
+- [ ] **9D.4** 改造 ChatPageContent / EditorPageContent
+  - 替换 `fetch("http://localhost:3001")` 硬编码
+  - 使用 MCPStatusBadge 组件
+
+#### 9E: 安全加固 + 心跳检测 + 自动重连
+
+- [x] **9E.1** MCPHub 心跳检测 ✅
+  - 每 30 秒对每个连接做 healthCheck
+  - 失败时标记 status 为 "error"，触发自动重连
+  - 自动重连策略：指数退避，最多 5 次
+- [ ] **9E.2** 工具描述安全扫描
+  - 新增 `security.ts`：扫描工具描述中的 Prompt 注入模式
+  - 工具注册前执行安全扫描，可疑工具标记为 "warning"
+  - 前端展示警告标识
+- [ ] **9E.3** 认证头加密
+  - 使用 Node.js crypto 模块 AES-256 加密 headers 中的敏感字段
+  - 运行时解密，持久化时加密
+
+#### 执行依赖关系
+
+```
+9A (MCP Hub 核心)
+ │
+ ├── 9B (路由改造 + API) ──→ 9D (前端管理面板)
+ │
+ ├── 9C (Skill 扩展)
+ │
+ └── 9E (安全加固)
+```
+
+**建议执行顺序**：9A → 9B → 9C → 9D → 9E
+
+### Phase 10: 协作与智能增强
 
 - [ ] 集成 Yjs CRDT 支持多用户协同编辑
 - [ ] 集成 LSP 提高代码修改准确率
 - [ ] 文件引用 (@file) 组件（聊天入口）
 - [ ] Agent 文件修改的双入口实时同步
 
-### Phase 8: 生产化
+### Phase 11: 生产化
 
 - [ ] Kubernetes 部署与多环境隔离
 - [ ] 持久化日志 (PostgreSQL)
@@ -1087,6 +1229,8 @@ npm install @anthropic-ai/sdk zod socket.io yjs
 | RBAC | Role-Based Access Control | 基于角色的访问控制 |
 | Skill | — | Agent 的可插拔能力扩展单元，封装工具定义和 Prompt 增强 |
 | Skill Registry | — | 全局注册表，管理已安装 Skill 的元数据和生命周期 |
+| SKILL.md | — | 业界标准的 Skill 定义文件格式，YAML frontmatter + Markdown 指令 |
+| SkillSource | — | Skill 安装来源信息（market/zip/github/local/url） |
 
 ### 10.2 连接协议速查
 

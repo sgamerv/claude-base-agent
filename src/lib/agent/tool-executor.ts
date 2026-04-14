@@ -2,12 +2,13 @@
  * Agent 工具执行器
  * 支持三种模式：
  *   1. Skill 本地模式: 执行 Skill 注册的本地工具
- *   2. MCP 模式 (推荐): 通过 MCP Client 调用远程 CDE 容器
+ *   2. MCP Hub 统一路由: 内置 CDE MCP + 外部 MCP Server
  *   3. 本地模式 (fallback): 直接在 Node.js 进程中执行
- * Phase 5: 集成 Skill 工具路由
+ * Phase 9: 集成 MCP Hub 统一路由
  */
 
 import { MCPClient, type MCPToolResult } from "../mcp/client";
+import { getMCPHub, initMCPHub } from "../mcp/hub";
 import { executeSkillTool } from "../skill/executor";
 
 export interface ToolResult {
@@ -20,18 +21,31 @@ let mcpClient: MCPClient | null = null;
 let mcpAvailable = false;
 
 /**
- * 初始化 MCP 客户端
- * 在控制平面启动时调用
+ * 初始化 MCP 客户端（兼容旧调用）
+ * Phase 9: 改为初始化 MCPHub
  */
 export async function initMCPClient(serverUrl?: string): Promise<boolean> {
   const url = serverUrl || process.env.MCP_SERVER_URL || "http://localhost:3001";
-  mcpClient = new MCPClient(url);
 
-  mcpAvailable = await mcpClient.healthCheck();
-  if (mcpAvailable) {
-    console.log(`[MCP] Connected to MCP Server at ${url}`);
-  } else {
-    console.log(`[MCP] MCP Server not available at ${url}, using local fallback`);
+  try {
+    const hub = await initMCPHub(url);
+    mcpAvailable = hub.isBuiltInAvailable();
+
+    if (mcpAvailable) {
+      console.log(`[MCP] Connected to MCP Server at ${url} (via Hub)`);
+    } else {
+      console.log(`[MCP] MCP Server not available at ${url}, using local fallback`);
+    }
+  } catch (error) {
+    console.error("[MCP] Failed to initialize MCPHub, falling back to direct client:", error);
+    // 降级：直接使用 MCPClient
+    mcpClient = new MCPClient(url);
+    mcpAvailable = await mcpClient.healthCheck();
+    if (mcpAvailable) {
+      console.log(`[MCP] Connected to MCP Server at ${url} (direct)`);
+    } else {
+      console.log(`[MCP] MCP Server not available at ${url}, using local fallback`);
+    }
   }
 
   return mcpAvailable;
@@ -39,7 +53,7 @@ export async function initMCPClient(serverUrl?: string): Promise<boolean> {
 
 /**
  * 执行工具调用
- * 优先级：Skill 本地 → MCP 远程 → 本地 Fallback
+ * 优先级：Skill 本地 → MCP Hub 统一路由 → 本地 Fallback
  * workspacePath: 指定 session 的工作目录，为空则使用默认 PROJECT_ROOT
  */
 export async function executeTool(
@@ -51,7 +65,20 @@ export async function executeTool(
   const skillResult = await executeSkillTool(toolName, input);
   if (skillResult) return skillResult;
 
-  // 2. 尝试 MCP 远程执行
+  // 2. 尝试 MCP Hub 统一路由
+  const hub = getMCPHub();
+  if (hub) {
+    const hubResult = await hub.executeTool(toolName, input, workspacePath);
+    if (hubResult) {
+      return {
+        success: hubResult.success,
+        content: hubResult.content,
+        error: hubResult.error,
+      };
+    }
+  }
+
+  // 2.5 兼容：直接 MCP Client（Hub 初始化失败时的降级路径）
   if (mcpClient && mcpAvailable) {
     const mcpArgs = workspacePath ? { ...input, workspacePath } : input;
     const mcpResult = await mcpClient.executeTool(toolName, mcpArgs);

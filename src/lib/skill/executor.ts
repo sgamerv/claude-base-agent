@@ -1,22 +1,61 @@
 /**
  * Skill 工具执行器
- * 处理扩展 Skill 的本地工具调用
+ * 处理扩展 Skill 的本地工具调用和外部 MCP 路由
  * Phase 5: 可插拔能力扩展
+ * Phase 9: external-mcp handler 路由到 MCPHub
  */
 
 import type { ToolResult } from "../agent/tool-executor";
+import { getMCPHub } from "../mcp/hub";
 
 /**
- * 执行 Skill 的本地工具
- * @returns ToolResult
+ * 执行 Skill 的本地工具或外部 MCP 工具
+ * @returns ToolResult 或 null（交给其他执行器）
  */
 export async function executeSkillTool(
   toolName: string,
   input: Record<string, string>
 ): Promise<ToolResult | null> {
+  // 1. 尝试本地 Skill 工具
   const handler = SKILL_LOCAL_HANDLERS[toolName];
-  if (!handler) return null; // 不是 Skill 工具，交给其他执行器
-  return handler(input);
+  if (handler) return handler(input);
+
+  // 2. 检查是否为 external-mcp 工具（通过 Skill 注册的路由表）
+  const externalRoute = EXTERNAL_MCP_ROUTES[toolName];
+  if (externalRoute) {
+    const hub = getMCPHub();
+    if (!hub) {
+      return { success: false, content: "", error: "MCP Hub not available" };
+    }
+    const result = await hub.executeTool(
+      `${externalRoute.serverId}__${externalRoute.mcpTool}`,
+      input
+    );
+    if (result) {
+      return { success: result.success, content: result.content, error: result.error };
+    }
+    return { success: false, content: "", error: `External MCP tool "${toolName}" execution failed` };
+  }
+
+  return null;
+}
+
+/**
+ * 注册 external-mcp 路由
+ * 由 registry.ts 在加载 Skill 时调用
+ */
+const EXTERNAL_MCP_ROUTES: Record<string, { serverId: string; mcpTool: string }> = {};
+
+export function registerExternalMCPRoute(
+  toolName: string,
+  serverId: string,
+  mcpTool: string
+): void {
+  EXTERNAL_MCP_ROUTES[toolName] = { serverId, mcpTool };
+}
+
+export function clearExternalMCPRoutes(): void {
+  Object.keys(EXTERNAL_MCP_ROUTES).forEach((key) => delete EXTERNAL_MCP_ROUTES[key]);
 }
 
 // ========== Skill 工具处理器 ==========

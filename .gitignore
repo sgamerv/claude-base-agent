@@ -36,6 +36,9 @@ yarn-error.log*
 /data/
 /workspaces/
 
+# installed skills (runtime)
+/skills/
+
 # vercel
 .vercel
 

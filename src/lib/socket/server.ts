@@ -12,6 +12,7 @@ import { initMCPClient } from "../agent/tool-executor";
 import { setSessionHistoriesRef } from "./server-cleanup";
 import { getSession, getWorkspaceAbsPath } from "../session/manager";
 import { getEnabledSkillPromptAddons } from "../skill/registry";
+import type { SelectOption } from "../types/chat";
 
 // 存储等待用户回复的 Promise
 const pendingUserReplies = new Map<string, (response: string) => void>();
@@ -166,8 +167,8 @@ export function initSocketServer(httpServer: HttpServer): SocketIOServer {
             content: result.success ? result.content : result.error,
           });
         },
-        onAskUser: async (question: string, toolCallId: string): Promise<string> => {
-          io.to(sessionId).emit("agent_needs_input", { sessionId, question, toolCallId });
+        onAskUser: async (question: string, toolCallId: string, options?: SelectOption[], multiple?: boolean): Promise<string> => {
+          io.to(sessionId).emit("agent_needs_input", { sessionId, question, toolCallId, options, multiple });
           return new Promise((resolve) => {
             pendingUserReplies.set(toolCallId, resolve);
           });
