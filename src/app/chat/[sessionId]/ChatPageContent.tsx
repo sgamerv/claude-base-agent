@@ -8,7 +8,7 @@ import Link from "next/link";
 const ChatPanel = dynamic(() => import("@/components/chat/ChatPanel"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full text-zinc-400">
+    <div className="flex items-center justify-center h-full text-text-muted">
       加载中...
     </div>
   ),
@@ -31,19 +31,19 @@ export default function ChatPageContent({
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-zinc-950">
+    <div className="flex flex-col h-screen bg-bg-marketing">
       {/* 顶部栏 */}
-      <header className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 px-4 py-3 bg-white dark:bg-zinc-900">
+      <header className="flex items-center justify-between border-b border-border-subtle px-4 py-3 bg-bg-panel">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+            className="text-text-muted hover:text-text-secondary transition-colors"
           >
             ← 返回
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-lg">🤖</span>
-            <h1 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-sm font-[510] text-text-primary">
               Cloud CDE Agent
             </h1>
           </div>
@@ -52,7 +52,7 @@ export default function ChatPageContent({
         <div className="flex items-center gap-3">
           <Link
             href={`/editor/${sessionId}`}
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 transition-colors"
+            className="text-xs text-accent-link hover:text-accent-link-hover transition-colors"
           >
             📝 编辑器入口 →
           </Link>
@@ -61,13 +61,13 @@ export default function ChatPageContent({
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 mcpStatus === "checking"
-                  ? "bg-yellow-500 animate-pulse"
+                  ? "bg-status-warning animate-pulse"
                   : mcpStatus === "connected"
-                  ? "bg-green-500"
-                  : "bg-zinc-400"
+                  ? "bg-status-success"
+                  : "bg-[#3e3e44]"
               }`}
             />
-            <span className="text-zinc-500">
+            <span className="text-text-muted">
               {mcpStatus === "checking"
                 ? "检测 MCP..."
                 : mcpStatus === "connected"
@@ -75,11 +75,11 @@ export default function ChatPageContent({
                 : "本地模式"}
             </span>
           </span>
-          <span className="text-xs text-zinc-400 font-mono">
+          <span className="text-xs text-[#3e3e44] font-mono">
             {sessionId}
           </span>
-          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+          <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-interactive" />
             GLM-5.1
           </span>
         </div>

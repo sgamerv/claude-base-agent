@@ -38,11 +38,11 @@ export default function ChatInput({ onSend, disabled, agentStatus }: ChatInputPr
   };
 
   return (
-    <div className="border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4">
+    <div className="border-t border-border-subtle bg-bg-panel p-4">
       {/* Agent 状态指示 */}
       {agentStatus && agentStatus !== "idle" && (
-        <div className="flex items-center gap-2 mb-2 text-xs text-zinc-500">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        <div className="flex items-center gap-2 mb-2 text-xs text-text-muted">
+          <span className="w-2 h-2 rounded-full bg-accent-interactive animate-pulse" />
           <span>{agentStatus === "thinking" ? "Agent 思考中..." : agentStatus === "executing" ? "Agent 执行中..." : agentStatus}</span>
         </div>
       )}
@@ -57,13 +57,13 @@ export default function ChatInput({ onSend, disabled, agentStatus }: ChatInputPr
             placeholder="输入消息，按 Enter 发送，Shift+Enter 换行..."
             disabled={disabled}
             rows={1}
-            className="w-full resize-none rounded-xl border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+            className="w-full resize-none rounded-xl border border-border-standard bg-[rgba(255,255,255,0.02)] px-4 py-3 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent disabled:opacity-50"
           />
         </div>
         <button
           onClick={handleSend}
           disabled={!input.trim() || disabled}
-          className="flex-shrink-0 rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-shrink-0 rounded-xl bg-accent-brand px-4 py-3 text-sm font-[510] text-white hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           发送
         </button>

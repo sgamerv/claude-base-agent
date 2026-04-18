@@ -263,7 +263,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
     <div className="flex flex-col h-full relative">
       {/* 连接状态 */}
       {!isConnected && (
-        <div className="bg-red-500 text-white text-center text-xs py-1 z-10">
+        <div className="bg-status-error text-white text-center text-xs py-1 z-10">
           连接断开，尝试重连中...
         </div>
       )}
@@ -271,9 +271,9 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+          <div className="flex flex-col items-center justify-center h-full text-text-muted">
             <div className="text-4xl mb-4">🤖</div>
-            <h2 className="text-lg font-medium mb-2">Cloud CDE Agent</h2>
+            <h2 className="text-lg font-[510] text-text-primary mb-2">Cloud CDE Agent</h2>
             <p className="text-sm text-center max-w-md">
               你好！我是你的 AI 编程助手。你可以让我帮你分析代码、修复 Bug、重构项目等。
               <br />
@@ -289,7 +289,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
                 <button
                   key={suggestion}
                   onClick={() => handleSend(suggestion)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-left text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="rounded-lg border border-border-standard px-3 py-2 text-left text-text-secondary hover:bg-[rgba(255,255,255,0.04)] transition-colors"
                 >
                   {suggestion}
                 </button>
