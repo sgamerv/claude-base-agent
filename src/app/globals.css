@@ -1,31 +1,62 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* 字体 */
+  --font-sans: var(--font-inter), "SF Pro Display", -apple-system, system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-mono: "Berkeley Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* 背景 */
+  --color-bg-marketing: #08090a;
+  --color-bg-panel: #0f1011;
+  --color-bg-surface: #191a1b;
+  --color-bg-hover: #28282c;
+
+  /* 文字 */
+  --color-text-primary: #f7f8f8;
+  --color-text-secondary: #d0d6e0;
+  --color-text-tertiary: #8a8f98;
+  --color-text-muted: #62666d;
+
+  /* 品牌 */
+  --color-accent-brand: #5e6ad2;
+  --color-accent-interactive: #7170ff;
+  --color-accent-hover: #828fff;
+  --color-accent-link: #a8b1ff;
+  --color-accent-link-hover: #c7cdff;
+
+  /* 边框 */
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-standard: rgba(255, 255, 255, 0.08);
+  --color-border-solid: #23252a;
+
+  /* 状态 */
+  --color-status-success: #27a644;
+  --color-status-error: #e5484d;
+  --color-status-warning: #f5a623;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-marketing);
+  color: var(--color-text-secondary);
 }
 
-/* 滚动条样式 */
+/* 全局链接 */
+a {
+  color: var(--color-accent-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(168, 177, 255, 0.3);
+  transition: all 0.15s;
+}
+
+a:hover {
+  color: var(--color-accent-link-hover);
+  text-decoration-color: rgba(199, 205, 255, 0.6);
+  background: rgba(168, 177, 255, 0.08);
+  border-radius: 3px;
+}
+
+/* 滚动条 */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -35,20 +66,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #d4d4d8;
+  background-color: #3e3e44;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #a1a1aa;
-}
-
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background-color: #3f3f46;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #52525b;
-  }
+  background-color: #52525b;
 }
