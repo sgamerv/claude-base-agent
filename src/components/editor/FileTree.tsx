@@ -80,8 +80,8 @@ function FileTreeNode({
     <div>
       <button
         onClick={handleClick}
-        className={`w-full flex items-center gap-1.5 py-1 px-2 text-left text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-          isSelected ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300" : "text-zinc-700 dark:text-zinc-300"
+        className={`w-full flex items-center gap-1.5 py-1 px-2 text-left text-xs hover:bg-[rgba(255,255,255,0.03)] transition-colors ${
+          isSelected ? "bg-[rgba(94,106,210,0.08)] text-accent-hover" : "text-text-secondary"
         }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
@@ -92,7 +92,7 @@ function FileTreeNode({
         <div>
           {children.length === 0 && loaded && (
             <div
-              className="text-xs text-zinc-400 py-1"
+              className="text-xs text-text-muted py-1"
               style={{ paddingLeft: `${(depth + 1) * 12 + 8}px` }}
             >
               (空目录)
@@ -159,13 +159,13 @@ export default function FileTree({ onFileSelect, selectedFile, workspacePath }: 
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-        <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
+        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
           资源管理器
         </span>
         <button
           onClick={handleRefresh}
-          className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          className="text-xs text-text-muted hover:text-text-secondary transition-colors"
           title="刷新"
         >
           ↻
@@ -173,9 +173,9 @@ export default function FileTree({ onFileSelect, selectedFile, workspacePath }: 
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="text-xs text-zinc-400 px-3 py-4">加载中...</div>
+          <div className="text-xs text-text-muted px-3 py-4">加载中...</div>
         ) : rootNodes.length === 0 ? (
-          <div className="text-xs text-zinc-400 px-3 py-4">无法加载文件树</div>
+          <div className="text-xs text-text-muted px-3 py-4">无法加载文件树</div>
         ) : (
           rootNodes.map((node) => (
             <FileTreeNode

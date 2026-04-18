@@ -80,25 +80,25 @@ export default function TerminalPanel({ sessionId, workspacePath }: TerminalPane
   // 简单 ANSI 转义处理
   const renderLine = (line: string) => {
     return line
-      .replace(/\x1b\[32m/g, '<span class="text-green-500">')
-      .replace(/\x1b\[36m/g, '<span class="text-cyan-500">')
-      .replace(/\x1b\[31m/g, '<span class="text-red-500">')
-      .replace(/\x1b\[33m/g, '<span class="text-yellow-500">')
-      .replace(/\x1b\[90m/g, '<span class="text-zinc-500">')
+      .replace(/\x1b\[32m/g, '<span class="text-status-success">')
+      .replace(/\x1b\[36m/g, '<span class="text-accent-interactive">')
+      .replace(/\x1b\[31m/g, '<span class="text-status-error">')
+      .replace(/\x1b\[33m/g, '<span class="text-status-warning">')
+      .replace(/\x1b\[90m/g, '<span class="text-text-muted">')
       .replace(/\x1b\[0m/g, "</span>");
   };
 
   return (
     <div
-      className="h-full flex flex-col bg-zinc-950 font-mono text-xs"
+      className="h-full flex flex-col bg-bg-marketing font-mono text-xs"
       onClick={() => inputRef.current?.focus()}
     >
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800 bg-zinc-900">
-        <span className="text-zinc-400 text-xs">终端</span>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border-subtle bg-bg-panel">
+        <span className="text-text-muted text-xs">终端</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setOutput([])}
-            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="text-text-muted hover:text-text-secondary transition-colors"
             title="清空"
           >
             ✕
@@ -112,20 +112,20 @@ export default function TerminalPanel({ sessionId, workspacePath }: TerminalPane
         {output.map((line, i) => (
           <div
             key={i}
-            className="text-zinc-300 whitespace-pre-wrap break-all"
+            className="text-text-secondary whitespace-pre-wrap break-all"
             dangerouslySetInnerHTML={{ __html: renderLine(line) }}
           />
         ))}
       </div>
-      <div className="flex items-center border-t border-zinc-800 px-3 py-2">
-        <span className="text-cyan-500 mr-2">$</span>
+      <div className="flex items-center border-t border-border-subtle px-3 py-2">
+        <span className="text-accent-interactive mr-2">$</span>
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent text-zinc-200 outline-none text-xs font-mono"
+          className="flex-1 bg-transparent text-text-primary outline-none text-xs font-mono"
           placeholder="输入命令..."
           autoFocus
         />

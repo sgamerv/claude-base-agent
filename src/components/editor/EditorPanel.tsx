@@ -62,7 +62,7 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* 左侧：文件树 */}
-      <div className="w-56 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+      <div className="w-56 flex-shrink-0 border-r border-border-subtle bg-bg-panel overflow-hidden">
         <FileTree onFileSelect={handleFileSelect} selectedFile={selectedFile} workspacePath={workspacePath} />
       </div>
 
@@ -79,17 +79,17 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
 
         {/* 底部面板 */}
         {showBottomPanel && (
-          <div className="h-56 flex-shrink-0 border-t border-zinc-200 dark:border-zinc-700 flex flex-col">
+          <div className="h-56 flex-shrink-0 border-t border-border-subtle flex flex-col">
             {/* 底部标签栏 */}
-            <div className="flex items-center border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-2">
+            <div className="flex items-center border-b border-border-subtle bg-bg-panel px-2">
               {(["terminal", "problems", "output"] as BottomTab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setBottomTab(tab)}
                   className={`px-3 py-1.5 text-xs transition-colors ${
                     bottomTab === tab
-                      ? "text-zinc-900 dark:text-zinc-100 border-b-2 border-blue-500"
-                      : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      ? "text-text-primary border-b-2 border-accent-brand"
+                      : "text-text-muted hover:text-text-secondary"
                   }`}
                 >
                   {tab === "terminal" ? "终端" : tab === "problems" ? "问题" : "输出"}
@@ -98,7 +98,7 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
               <div className="flex-1" />
               <button
                 onClick={() => setShowBottomPanel(false)}
-                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-xs px-2"
+                className="text-text-muted hover:text-text-secondary text-xs px-2"
               >
                 ✕
               </button>
@@ -108,12 +108,12 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
             <div className="flex-1 overflow-hidden">
               {bottomTab === "terminal" && <TerminalPanel sessionId={sessionId} workspacePath={workspacePath} />}
               {bottomTab === "problems" && (
-                <div className="h-full flex items-center justify-center text-xs text-zinc-400">
+                <div className="h-full flex items-center justify-center text-xs text-text-muted">
                   暂无问题
                 </div>
               )}
               {bottomTab === "output" && (
-                <div className="h-full flex items-center justify-center text-xs text-zinc-400">
+                <div className="h-full flex items-center justify-center text-xs text-text-muted">
                   暂无输出
                 </div>
               )}
@@ -122,12 +122,12 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
         )}
 
         {/* 状态栏 */}
-        <div className="flex items-center justify-between px-3 py-1 bg-blue-600 text-white text-xs select-none">
+        <div className="flex items-center justify-between px-3 py-1 bg-accent-brand text-white text-xs select-none">
           <div className="flex items-center gap-3">
             {!showBottomPanel && (
               <button
                 onClick={() => setShowBottomPanel(true)}
-                className="hover:bg-blue-700 px-1.5 py-0.5 rounded transition-colors"
+                className="hover:bg-accent-hover px-1.5 py-0.5 rounded transition-colors"
               >
                 终端
               </button>
@@ -140,7 +140,7 @@ export default function EditorPanel({ sessionId, workspacePath, diffId }: Editor
             )}
             <button
               onClick={() => setShowAIPanel(!showAIPanel)}
-              className="hover:bg-blue-700 px-1.5 py-0.5 rounded transition-colors"
+              className="hover:bg-accent-hover px-1.5 py-0.5 rounded transition-colors"
             >
               🤖 AI
             </button>

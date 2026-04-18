@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full text-zinc-400 text-sm">
+    <div className="flex items-center justify-center h-full text-text-muted text-sm">
       加载编辑器...
     </div>
   ),
@@ -77,10 +77,10 @@ export default function CodeEditor({ filePath, content, onSave }: CodeEditorProp
 
   if (!filePath) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-400">
+      <div className="flex flex-col items-center justify-center h-full text-text-muted">
         <div className="text-4xl mb-4">📝</div>
         <p className="text-sm">选择文件开始编辑</p>
-        <p className="text-xs mt-1 text-zinc-500">从左侧文件树点击文件打开</p>
+        <p className="text-xs mt-1 text-text-muted">从左侧文件树点击文件打开</p>
       </div>
     );
   }
@@ -88,14 +88,14 @@ export default function CodeEditor({ filePath, content, onSave }: CodeEditorProp
   return (
     <div className="h-full flex flex-col">
       {/* 文件标签栏 */}
-      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white dark:bg-zinc-800 border-r border-zinc-200 dark:border-zinc-700">
+      <div className="flex items-center border-b border-border-subtle bg-bg-panel">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[rgba(255,255,255,0.04)] border-r border-border-subtle">
           <span>{getLanguage(filePath) === "typescript" ? "📘" : "📄"}</span>
-          <span className="text-zinc-700 dark:text-zinc-300 max-w-[150px] truncate">
+          <span className="text-text-secondary max-w-[150px] truncate">
             {filePath.split("/").pop()}
           </span>
           {modified && (
-            <span className="w-2 h-2 rounded-full bg-orange-500" />
+            <span className="w-2 h-2 rounded-full bg-status-warning" />
           )}
         </div>
         <div className="flex-1" />
@@ -107,7 +107,7 @@ export default function CodeEditor({ filePath, content, onSave }: CodeEditorProp
                 setModified(false);
               }
             }}
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 px-3 py-1"
+            className="text-xs text-accent-link hover:text-accent-link-hover px-3 py-1"
           >
             保存
           </button>
@@ -124,7 +124,7 @@ export default function CodeEditor({ filePath, content, onSave }: CodeEditorProp
           theme="vs-dark"
           options={{
             fontSize: 13,
-            fontFamily: "'Geist Mono', 'Fira Code', monospace",
+            fontFamily: "'Berkeley Mono', ui-monospace, 'SF Mono', Menlo, monospace",
             minimap: { enabled: false },
             lineNumbers: "on",
             scrollBeyondLastLine: false,

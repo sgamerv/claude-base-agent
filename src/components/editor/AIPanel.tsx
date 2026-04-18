@@ -58,7 +58,7 @@ function AIPanelPendingInput({
 
   return (
     <div className="mt-2 mr-4">
-      <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1.5">{displayQuestion}</p>
+      <p className="text-xs text-text-tertiary mb-1.5">{displayQuestion}</p>
 
       {/* 选项卡片 */}
       {hasOptions && (
@@ -71,20 +71,20 @@ function AIPanelPendingInput({
                 onClick={() => handleSelect(opt.value)}
                 className={`w-full text-left rounded border px-2 py-1.5 transition-colors ${
                   isSelected
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                    : "border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    ? "border-accent-brand bg-[rgba(94,106,210,0.08)]"
+                    : "border-border-standard hover:bg-[rgba(255,255,255,0.04)]"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
                   <span className="flex-shrink-0 text-[10px]">
                     {multiple ? (isSelected ? "☑" : "☐") : (isSelected ? "◉" : "○")}
                   </span>
-                  <span className={`text-xs ${isSelected ? "text-blue-700 dark:text-blue-300 font-medium" : "text-zinc-700 dark:text-zinc-300"}`}>
+                  <span className={`text-xs ${isSelected ? "text-accent-hover font-[510]" : "text-text-primary"}`}>
                     {opt.label}
                   </span>
                 </div>
                 {opt.description && (
-                  <p className="text-[10px] text-zinc-400 ml-4 mt-0.5">{opt.description}</p>
+                  <p className="text-[10px] text-text-muted ml-4 mt-0.5">{opt.description}</p>
                 )}
               </button>
             );
@@ -97,7 +97,7 @@ function AIPanelPendingInput({
         <button
           onClick={handleConfirm}
           disabled={selectedValues.length === 0}
-          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50 mb-1.5"
+          className="text-xs bg-accent-brand text-white px-2 py-1 rounded hover:bg-accent-hover disabled:opacity-50 mb-1.5"
         >
           {multiple ? `确认 (${selectedValues.length})` : "确认"}
         </button>
@@ -115,7 +115,7 @@ function AIPanelPendingInput({
               setCustomReply("");
             }
           }}
-          className="flex-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 px-2 py-1 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="flex-1 text-xs rounded border border-border-standard bg-[rgba(255,255,255,0.03)] px-2 py-1 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-brand"
           placeholder={hasOptions ? "自定义回复..." : "回复..."}
           autoFocus={!hasOptions}
         />
@@ -127,7 +127,7 @@ function AIPanelPendingInput({
             }
           }}
           disabled={!customReply.trim()}
-          className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="text-xs bg-accent-brand text-white px-2 py-1 rounded hover:bg-accent-hover disabled:opacity-50"
         >
           回复
         </button>
@@ -344,35 +344,35 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
   if (isCollapsed) {
     return (
-      <div className="flex flex-col items-center py-3 px-1 bg-zinc-50 dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-700">
+      <div className="flex flex-col items-center py-3 px-1 bg-bg-panel border-l border-border-subtle">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-lg"
+          className="text-text-muted hover:text-text-secondary text-lg"
           title="展开 AI 面板"
         >
           🤖
         </button>
         {agentState.status !== "idle" && (
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mt-2" />
+          <div className="w-2 h-2 rounded-full bg-accent-interactive animate-pulse mt-2" />
         )}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full border-l border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950">
+    <div className="flex flex-col h-full border-l border-border-subtle bg-bg-marketing">
       {/* 面板头部 */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle bg-bg-panel">
         <div className="flex items-center gap-2">
           <span className="text-sm">🤖</span>
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">AI 助手</span>
+          <span className="text-xs font-medium text-text-tertiary font-[510]">AI 助手</span>
           {statusText && (
-            <span className="text-xs text-blue-500 animate-pulse">{statusText}</span>
+            <span className="text-xs text-accent-interactive animate-pulse">{statusText}</span>
           )}
         </div>
         <button
           onClick={() => setIsCollapsed(true)}
-          className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 text-xs"
+          className="text-text-muted hover:text-text-secondary text-xs"
         >
           ▶
         </button>
@@ -380,9 +380,9 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
       {/* Diff 预览区域（编辑器入口特有） */}
       {activeDiff && (
-        <div className="border-b border-zinc-200 dark:border-zinc-700">
-          <div className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/30 border-b border-zinc-200 dark:border-zinc-700">
-            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">📝 文件变更预览</span>
+        <div className="border-b border-border-subtle">
+          <div className="px-3 py-1.5 bg-[rgba(94,106,210,0.06)] border-b border-border-subtle">
+            <span className="text-xs font-medium text-accent-hover font-[510]">📝 文件变更预览</span>
           </div>
           <div className="max-h-[50vh] overflow-auto">
             <DiffViewer
@@ -396,18 +396,18 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
       {/* 快捷指令 */}
       {messages.length === 0 && !activeDiff && (
-        <div className="px-3 py-2 border-b border-zinc-200 dark:border-zinc-700">
-          <span className="text-xs text-zinc-400 block mb-2">快捷指令</span>
+        <div className="px-3 py-2 border-b border-border-subtle">
+          <span className="text-xs text-text-muted block mb-2">快捷指令</span>
           <div className="grid grid-cols-2 gap-1">
             {QUICK_COMMANDS.map((cmd) => (
               <button
                 key={cmd.label}
                 onClick={() => handleQuickCommand(cmd.label)}
                 disabled={isDisabled}
-                className="text-left text-xs px-2 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                className="text-left text-xs px-2 py-1.5 rounded border border-border-standard text-text-secondary hover:bg-[rgba(255,255,255,0.04)] disabled:opacity-50 transition-colors"
               >
                 <span className="font-mono font-medium">{cmd.label}</span>
-                <span className="block text-zinc-400 text-[10px] mt-0.5">{cmd.description}</span>
+                <span className="block text-text-muted text-[10px] mt-0.5">{cmd.description}</span>
               </button>
             ))}
           </div>
@@ -417,7 +417,7 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
       {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto px-3 py-2">
         {messages.length === 0 && !activeDiff ? (
-          <div className="text-center text-zinc-400 text-xs py-4">
+          <div className="text-center text-text-muted text-xs py-4">
             输入消息或使用快捷指令与 AI 交互
           </div>
         ) : (
@@ -428,10 +428,10 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
                 <div
                   className={`text-xs rounded-lg px-3 py-2 ${
                     msg.role === "user"
-                      ? "bg-blue-600 text-white ml-4"
+                      ? "bg-accent-brand text-white ml-4"
                       : msg.role === "system"
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                      : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100 mr-4"
+                      ? "bg-[rgba(245,166,35,0.08)] text-status-warning"
+                      : "bg-[rgba(255,255,255,0.03)] text-text-primary mr-4"
                   }`}
                 >
                   {msg.content}
@@ -440,19 +440,19 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
               {/* 工具调用 */}
               {msg.toolCalls?.map((tc) => (
-                <div key={tc.id} className="text-xs bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2 mt-1 mr-4 border border-zinc-200 dark:border-zinc-700">
+                <div key={tc.id} className="text-xs bg-[rgba(255,255,255,0.02)] rounded-lg px-3 py-2 mt-1 mr-4 border border-border-standard">
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${tc.status === "calling" ? "bg-yellow-500 animate-pulse" : tc.status === "completed" ? "bg-green-500" : "bg-red-500"}`} />
-                    <span className="font-medium text-zinc-600 dark:text-zinc-400">{tc.toolName}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${tc.status === "calling" ? "bg-status-warning animate-pulse" : tc.status === "completed" ? "bg-status-success" : "bg-status-error"}`} />
+                    <span className="font-medium text-text-tertiary">{tc.toolName}</span>
                     {tc.input.command && (
-                      <code className="text-zinc-500 text-[10px] truncate max-w-[120px]">{tc.input.command}</code>
+                      <code className="text-text-muted text-[10px] truncate max-w-[120px]">{tc.input.command}</code>
                     )}
                     {tc.input.path && (
-                      <code className="text-zinc-500 text-[10px] truncate max-w-[120px]">{tc.input.path}</code>
+                      <code className="text-text-muted text-[10px] truncate max-w-[120px]">{tc.input.path}</code>
                     )}
                   </div>
                   {tc.result && (
-                    <pre className="text-[10px] text-zinc-500 mt-1 max-h-20 overflow-y-auto">{tc.result}</pre>
+                    <pre className="text-[10px] text-text-muted mt-1 max-h-20 overflow-y-auto">{tc.result}</pre>
                   )}
                 </div>
               ))}
@@ -479,21 +479,21 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
               {/* 审批 */}
               {msg.pendingApproval && (
-                <div className="mt-2 mr-4 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
-                  <p className="text-xs text-red-600 dark:text-red-400 mb-1">⚠️ 需要审批</p>
-                  <code className="text-[10px] block bg-red-50 dark:bg-red-950 text-red-800 dark:text-red-200 p-1 rounded mb-2 font-mono">
+                <div className="mt-2 mr-4 border border-[rgba(229,72,77,0.2)] rounded-lg px-3 py-2">
+                  <p className="text-xs text-status-error mb-1">⚠️ 需要审批</p>
+                  <code className="text-[10px] block bg-[rgba(229,72,77,0.08)] text-status-error p-1 rounded mb-2 font-mono">
                     $ {msg.pendingApproval.command}
                   </code>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleApproval(msg.pendingApproval!.toolCallId, true)}
-                      className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                      className="text-xs bg-status-error text-white px-2 py-1 rounded hover:bg-[#d03d42]"
                     >
                       允许
                     </button>
                     <button
                       onClick={() => handleApproval(msg.pendingApproval!.toolCallId, false)}
-                      className="text-xs border border-zinc-300 dark:border-zinc-600 px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      className="text-xs border border-border-standard px-2 py-1 rounded hover:bg-[rgba(255,255,255,0.04)]"
                     >
                       拒绝
                     </button>
@@ -503,10 +503,10 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
 
               {/* 思考中 */}
               {msg.isThinking && !msg.content && (
-                <div className="flex items-center gap-1 text-xs text-zinc-400 mr-4">
-                  <span className="w-1 h-1 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <span className="w-1 h-1 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <span className="w-1 h-1 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="flex items-center gap-1 text-xs text-text-muted mr-4">
+                  <span className="w-1 h-1 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1 h-1 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1 h-1 bg-text-muted rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
               )}
             </div>
@@ -516,7 +516,7 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
       </div>
 
       {/* 输入区 */}
-      <div className="border-t border-zinc-200 dark:border-zinc-700 px-3 py-2">
+      <div className="border-t border-border-subtle px-3 py-2">
         <div className="flex gap-2">
           <input
             type="text"
@@ -530,12 +530,12 @@ export default function AIPanel({ sessionId, onFileOpen, diffId }: AIPanelProps)
             }}
             disabled={isDisabled}
             placeholder="输入消息或 / 指令..."
-            className="flex-1 text-xs rounded-lg border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            className="flex-1 text-xs rounded-lg border border-border-standard bg-[rgba(255,255,255,0.02)] px-3 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent-brand disabled:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isDisabled}
-            className="rounded-lg bg-blue-600 px-3 py-2 text-xs text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="rounded-lg bg-accent-brand px-3 py-2 text-xs text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
           >
             发送
           </button>
