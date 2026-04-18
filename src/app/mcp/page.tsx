@@ -82,24 +82,24 @@ export default function MCPPage() {
   const totalTools = servers.reduce((sum, s) => sum + s.toolCount, 0);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
+    <div className="min-h-screen bg-bg-marketing">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* 顶部导航 */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/")}
-              className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+              className="text-text-muted hover:text-text-secondary"
             >
               ← 返回
             </button>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-2xl font-[510] text-text-primary tracking-[-0.288px]">
               🔌 MCP 服务管理
             </h1>
           </div>
           <button
             onClick={() => setShowAddDialog(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-accent-brand text-white text-sm rounded-lg hover:bg-accent-hover"
           >
             + 添加服务
           </button>
@@ -107,28 +107,28 @@ export default function MCPPage() {
 
         {/* 统计概览 */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">服务总数</p>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{servers.length}</p>
+          <div className="bg-[rgba(255,255,255,0.02)] rounded-lg p-4 border border-border-standard">
+            <p className="text-sm text-text-muted">服务总数</p>
+            <p className="text-2xl font-[510] text-text-primary">{servers.length}</p>
           </div>
-          <div className="bg-white dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">已连接</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{connectedCount}</p>
+          <div className="bg-[rgba(255,255,255,0.02)] rounded-lg p-4 border border-border-standard">
+            <p className="text-sm text-text-muted">已连接</p>
+            <p className="text-2xl font-[510] text-status-success">{connectedCount}</p>
           </div>
-          <div className="bg-white dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">可用工具</p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalTools}</p>
+          <div className="bg-[rgba(255,255,255,0.02)] rounded-lg p-4 border border-border-standard">
+            <p className="text-sm text-text-muted">可用工具</p>
+            <p className="text-2xl font-[510] text-accent-interactive">{totalTools}</p>
           </div>
         </div>
 
         {/* 服务列表 */}
         <div className="space-y-3">
           {loading ? (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-12 text-text-muted">
               加载中...
             </div>
           ) : servers.length === 0 ? (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-12 text-text-muted">
               <p className="text-lg mb-2">暂无 MCP 服务</p>
               <p className="text-sm">点击右上角「添加服务」连接外部 MCP Server</p>
             </div>
@@ -146,11 +146,11 @@ export default function MCPPage() {
         </div>
 
         {/* 说明 */}
-        <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
+        <div className="mt-8 p-4 bg-[rgba(94,106,210,0.06)] rounded-lg border border-[rgba(94,106,210,0.2)]">
+          <h3 className="text-sm font-[510] text-accent-hover mb-2">
             💡 什么是 MCP 服务？
           </h3>
-          <p className="text-xs text-blue-700 dark:text-blue-400">
+          <p className="text-xs text-text-secondary">
             MCP (Model Context Protocol) 是一种标准化协议，允许 AI Agent 连接外部工具和数据源。
             添加外部 MCP 服务后，Agent 可以自动发现并调用该服务提供的工具，扩展自身能力。
             支持的传输协议包括 SSE 和 Streamable HTTP。

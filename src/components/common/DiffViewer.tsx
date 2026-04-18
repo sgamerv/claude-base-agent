@@ -118,28 +118,28 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
   }, [diffLines, compact]);
 
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+    <div className="rounded-lg border border-border-standard overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
+      <div className="flex items-center justify-between px-3 py-2 bg-[rgba(255,255,255,0.03)] border-b border-border-subtle">
         <div className="flex items-center gap-2">
           <span className="text-sm">📝</span>
-          <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 font-mono truncate max-w-[200px]">
+          <span className="text-xs font-[510] text-text-secondary font-mono truncate max-w-[200px]">
             {diff.filePath}
           </span>
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-text-muted">
             +{stats.added} -{stats.removed}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onAccept(diff.diffId)}
-            className="rounded-md bg-green-600 px-2.5 py-1 text-xs text-white hover:bg-green-700 transition-colors"
+            className="rounded-md bg-status-success px-2.5 py-1 text-xs text-white hover:bg-[#2db84e] transition-colors"
           >
             ✓ 接受
           </button>
           <button
             onClick={() => onReject(diff.diffId)}
-            className="rounded-md border border-zinc-300 dark:border-zinc-600 px-2.5 py-1 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="rounded-md border border-border-standard px-2.5 py-1 text-xs text-text-muted hover:bg-[rgba(255,255,255,0.04)] transition-colors"
           >
             ✕ 拒绝
           </button>
@@ -148,7 +148,7 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
 
       {/* Diff content */}
       {isLoading ? (
-        <div className="px-3 py-3 text-center text-xs text-zinc-400">
+        <div className="px-3 py-3 text-center text-xs text-text-muted">
           加载变更内容中...
         </div>
       ) : !diff.originalContent ? (
@@ -159,13 +159,13 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
           style={{ maxHeight: compact ? 200 : 400 }}
         >
           {diff.newContent.split("\n").map((line, idx) => (
-            <div key={idx} className="flex bg-green-50 dark:bg-green-950/30">
-              <span className="w-10 flex-shrink-0 text-right pr-2 text-zinc-400 select-none border-r border-zinc-200 dark:border-zinc-700" />
-              <span className="w-10 flex-shrink-0 text-right pr-2 text-zinc-400 select-none border-r border-zinc-200 dark:border-zinc-700">
+            <div key={idx} className="flex bg-[rgba(39,166,68,0.06)]">
+              <span className="w-10 flex-shrink-0 text-right pr-2 text-text-muted select-none border-r border-border-subtle" />
+              <span className="w-10 flex-shrink-0 text-right pr-2 text-text-muted select-none border-r border-border-subtle">
                 {idx + 1}
               </span>
-              <span className="w-5 flex-shrink-0 text-center select-none text-green-600 dark:text-green-400">+</span>
-              <span className="flex-1 px-1 whitespace-pre-wrap break-all text-green-800 dark:text-green-300">
+              <span className="w-5 flex-shrink-0 text-center select-none text-status-success">+</span>
+              <span className="flex-1 px-1 whitespace-pre-wrap break-all text-status-success">
                 {line}
               </span>
             </div>
@@ -179,7 +179,7 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
         >
         {displayLines.map((line, idx) =>
           ("isGap" in line && line.isGap) ? (
-            <div key={idx} className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-center text-[10px]">
+            <div key={idx} className="px-3 py-1 bg-[rgba(255,255,255,0.03)] text-text-muted text-center text-[10px]">
               ···
             </div>
           ) : (
@@ -187,23 +187,23 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
               key={idx}
               className={`flex ${
                 line.type === "added"
-                  ? "bg-green-50 dark:bg-green-950/30"
+                  ? "bg-[rgba(39,166,68,0.06)]"
                   : line.type === "removed"
-                  ? "bg-red-50 dark:bg-red-950/30"
-                  : "hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+                  ? "bg-[rgba(229,72,77,0.06)]"
+                  : "hover:bg-[rgba(255,255,255,0.03)]"
               }`}
             >
-              <span className="w-10 flex-shrink-0 text-right pr-2 text-zinc-400 select-none border-r border-zinc-200 dark:border-zinc-700">
+              <span className="w-10 flex-shrink-0 text-right pr-2 text-text-muted select-none border-r border-border-subtle">
                 {line.oldLineNo ?? ""}
               </span>
-              <span className="w-10 flex-shrink-0 text-right pr-2 text-zinc-400 select-none border-r border-zinc-200 dark:border-zinc-700">
+              <span className="w-10 flex-shrink-0 text-right pr-2 text-text-muted select-none border-r border-border-subtle">
                 {line.newLineNo ?? ""}
               </span>
               <span className="w-5 flex-shrink-0 text-center select-none">
                 {line.type === "added" ? (
-                  <span className="text-green-600 dark:text-green-400">+</span>
+                  <span className="text-status-success">+</span>
                 ) : line.type === "removed" ? (
-                  <span className="text-red-600 dark:text-red-400">−</span>
+                  <span className="text-status-error">−</span>
                 ) : (
                   " "
                 )}
@@ -211,10 +211,10 @@ export default function DiffViewer({ diff, onAccept, onReject, compact }: DiffVi
               <span
                 className={`flex-1 px-1 whitespace-pre-wrap break-all ${
                   line.type === "added"
-                    ? "text-green-800 dark:text-green-300"
+                    ? "text-status-success"
                     : line.type === "removed"
-                    ? "text-red-800 dark:text-red-300"
-                    : "text-zinc-600 dark:text-zinc-400"
+                    ? "text-status-error"
+                    : "text-text-muted"
                 }`}
               >
                 {line.content}

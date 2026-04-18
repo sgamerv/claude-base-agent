@@ -126,16 +126,16 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.85)]">
+      <div className="bg-bg-surface rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto border border-border-standard">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+          <h2 className="text-lg font-[590] text-text-primary mb-4">
             🔌 添加 MCP 服务
           </h2>
 
           {/* 服务名称 */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               服务名称 *
             </label>
             <input
@@ -143,13 +143,13 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="如：PostgreSQL MCP"
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
             />
           </div>
 
           {/* 服务 ID */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               服务 ID *
             </label>
             <input
@@ -157,14 +157,14 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
               value={id}
               onChange={(e) => setId(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
               placeholder="如：postgres-mcp"
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
             />
-            <p className="text-xs text-zinc-500 mt-1">仅允许字母、数字、连字符、下划线</p>
+            <p className="text-xs text-text-muted mt-1">仅允许字母、数字、连字符、下划线</p>
           </div>
 
           {/* URL */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               URL *
             </label>
             <input
@@ -172,19 +172,19 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="如：http://localhost:5432/mcp"
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
             />
           </div>
 
           {/* 传输协议 */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               传输协议
             </label>
             <select
               value={transport}
               onChange={(e) => setTransport(e.target.value as any)}
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
             >
               <option value="sse">SSE (Server-Sent Events)</option>
               <option value="streamable-http">Streamable HTTP</option>
@@ -193,19 +193,19 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
 
           {/* 认证头 */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               认证头 (可选)
             </label>
             {Object.keys(headers).length > 0 && (
               <div className="mb-2 space-y-1">
                 {Object.entries(headers).map(([key, value]) => (
                   <div key={key} className="flex items-center gap-1 text-xs">
-                    <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-700 rounded text-zinc-600 dark:text-zinc-300">
+                    <span className="px-2 py-1 bg-[rgba(255,255,255,0.04)] rounded text-text-secondary">
                       {key}: {value.slice(0, 20)}{value.length > 20 ? "..." : ""}
                     </span>
                     <button
                       onClick={() => removeHeader(key)}
-                      className="text-red-500 hover:text-red-700"
+                      className="text-status-error hover:text-[#d03d42]"
                     >
                       ×
                     </button>
@@ -219,18 +219,18 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
                 value={headerKey}
                 onChange={(e) => setHeaderKey(e.target.value)}
                 placeholder="Key"
-                className="flex-1 px-3 py-1.5 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+                className="flex-1 px-3 py-1.5 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
               />
               <input
                 type="text"
                 value={headerValue}
                 onChange={(e) => setHeaderValue(e.target.value)}
                 placeholder="Value"
-                className="flex-1 px-3 py-1.5 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+                className="flex-1 px-3 py-1.5 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
               />
               <button
                 onClick={addHeader}
-                className="px-3 py-1.5 text-xs bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-lg hover:bg-zinc-200"
+                className="px-3 py-1.5 text-xs bg-[rgba(255,255,255,0.04)] text-text-secondary rounded-lg hover:bg-[rgba(255,255,255,0.08)]"
               >
                 +
               </button>
@@ -239,7 +239,7 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
 
           {/* 标签 */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            <label className="block text-sm font-[510] text-text-secondary mb-1">
               标签 (可选，逗号分隔)
             </label>
             <input
@@ -247,7 +247,7 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="如：database, api"
-              className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700 text-sm text-zinc-900 dark:text-zinc-100"
+              className="w-full px-3 py-2 border border-border-standard rounded-lg bg-[rgba(255,255,255,0.03)] text-sm text-text-primary"
             />
           </div>
 
@@ -255,8 +255,8 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
           {testResult && (
             <div className={`mb-4 px-3 py-2 rounded-lg text-sm ${
               testResult.success
-                ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                ? "bg-[rgba(39,166,68,0.08)] text-status-success"
+                : "bg-[rgba(229,72,77,0.08)] text-status-error"
             }`}>
               {testResult.success ? "✅" : "❌"} {testResult.message}
             </div>
@@ -267,20 +267,20 @@ export default function AddServerDialog({ open, onClose, onAdded }: AddServerDia
             <button
               onClick={testConnection}
               disabled={testing || !url}
-              className="px-4 py-2 text-sm bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-600 disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-[rgba(255,255,255,0.04)] text-text-secondary rounded-lg hover:bg-[rgba(255,255,255,0.08)] disabled:opacity-50"
             >
               {testing ? "测试中..." : "测试连接"}
             </button>
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-sm bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-600"
+              className="px-4 py-2 text-sm bg-[rgba(255,255,255,0.04)] text-text-secondary rounded-lg hover:bg-[rgba(255,255,255,0.08)]"
             >
               取消
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting || !id || !name || !url}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-accent-brand text-white rounded-lg hover:bg-accent-hover disabled:opacity-50"
             >
               {submitting ? "添加中..." : "添加"}
             </button>

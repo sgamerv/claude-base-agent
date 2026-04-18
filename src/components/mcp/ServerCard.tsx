@@ -65,19 +65,19 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
   return (
     <div className={`border rounded-lg p-4 ${
       server.status === "connected"
-        ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
+        ? "border-[rgba(39,166,68,0.2)] bg-[rgba(39,166,68,0.04)]"
         : server.status === "error"
-        ? "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10"
-        : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+        ? "border-[rgba(229,72,77,0.2)] bg-[rgba(229,72,77,0.04)]"
+        : "border-border-standard bg-[rgba(255,255,255,0.02)]"
     }`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg">{statusIcon}</span>
           <div>
-            <h3 className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+            <h3 className="font-[510] text-sm text-text-primary">
               {server.name}
             </h3>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-xs text-text-muted mt-0.5">
               {server.url}
             </p>
           </div>
@@ -89,7 +89,7 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
               <button
                 onClick={handleRefresh}
                 disabled={refreshing || server.status !== "connected"}
-                className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 disabled:opacity-50"
+                className="text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.04)] text-text-secondary hover:bg-[rgba(255,255,255,0.08)] disabled:opacity-50"
                 title="刷新工具列表"
               >
                 {refreshing ? "刷新中..." : "🔄"}
@@ -98,8 +98,8 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
                 onClick={() => onToggle(server.id, !server.enabled)}
                 className={`text-xs px-2 py-1 rounded ${
                   server.enabled
-                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200"
-                    : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200"
+                    ? "bg-[rgba(245,166,35,0.1)] text-status-warning hover:bg-[rgba(245,166,35,0.15)]"
+                    : "bg-[rgba(39,166,68,0.1)] text-status-success hover:bg-[rgba(39,166,68,0.15)]"
                 }`}
               >
                 {server.enabled ? "禁用" : "启用"}
@@ -108,8 +108,8 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
                 onClick={handleDelete}
                 className={`text-xs px-2 py-1 rounded ${
                   confirmingDelete
-                    ? "bg-red-500 text-white"
-                    : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200"
+                    ? "bg-status-error text-white"
+                    : "bg-[rgba(229,72,77,0.1)] text-status-error hover:bg-[rgba(229,72,77,0.15)]"
                 }`}
               >
                 {confirmingDelete ? "确认删除？" : "删除"}
@@ -117,14 +117,14 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
             </>
           )}
           {isBuiltIn && (
-            <span className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <span className="text-xs px-2 py-1 rounded bg-[rgba(94,106,210,0.1)] text-accent-hover">
               内置
             </span>
           )}
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+      <div className="mt-3 flex items-center gap-3 text-xs text-text-muted">
         <span>传输: {server.transport.toUpperCase()}</span>
         <span>工具: {server.toolCount} 个</span>
         <span>同步: {timeAgo}</span>
@@ -133,7 +133,7 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
             {server.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-block px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 mr-1"
+                className="inline-block px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-text-muted mr-1"
               >
                 {tag}
               </span>
@@ -143,7 +143,7 @@ export default function ServerCard({ server, onToggle, onDelete, onRefresh }: Se
       </div>
 
       {server.error && (
-        <div className="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">
+        <div className="mt-2 text-xs text-status-error bg-[rgba(229,72,77,0.08)] rounded px-2 py-1">
           ⚠️ {server.error}
         </div>
       )}

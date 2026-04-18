@@ -49,7 +49,7 @@ export default function MCPStatusBadge({ compact = false, className = "" }: MCPS
 
   if (loading) {
     return (
-      <span className={`text-xs text-zinc-500 ${className}`}>
+      <span className={`text-xs text-text-muted ${className}`}>
         🔌 MCP...
       </span>
     );
@@ -67,13 +67,13 @@ export default function MCPStatusBadge({ compact = false, className = "" }: MCPS
             {s.status === "connected" ? "🟢" : s.status === "error" ? "🔴" : "⚪"}
           </span>
         ))}
-        {servers.length === 0 && <span className="text-zinc-400">⚪</span>}
+        {servers.length === 0 && <span className="text-text-muted">⚪</span>}
       </span>
     );
   }
 
   return (
-    <span className={`text-xs text-zinc-500 dark:text-zinc-400 ${className}`}>
+    <span className={`text-xs text-text-muted ${className}`}>
       🔌 MCP:{" "}
       {servers.length === 0 ? (
         <span>⚪ 本地模式</span>
