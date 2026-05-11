@@ -145,6 +145,10 @@ export function useSocket(options: UseSocketOptions) {
     });
   };
 
+  const stopAgent = () => {
+    socketRef.current?.emit("stop_agent", { sessionId });
+  };
+
   return {
     isConnected,
     sendMessage,
@@ -152,5 +156,6 @@ export function useSocket(options: UseSocketOptions) {
     respondToApproval,
     respondToDiff,
     getDiffDetail,
+    stopAgent,
   };
 }

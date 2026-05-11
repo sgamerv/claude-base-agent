@@ -59,8 +59,13 @@ export async function initMCPClient(serverUrl?: string): Promise<boolean> {
 export async function executeTool(
   toolName: string,
   input: Record<string, string>,
-  workspacePath?: string
+  workspacePath?: string,
+  signal?: AbortSignal
 ): Promise<ToolResult> {
+  if (signal?.aborted) {
+    return { success: false, content: "", error: "Aborted" };
+  }
+
   // 1. 尝试 Skill 本地工具
   const skillResult = await executeSkillTool(toolName, input);
   if (skillResult) return skillResult;
@@ -68,7 +73,7 @@ export async function executeTool(
   // 2. 尝试 MCP Hub 统一路由
   const hub = getMCPHub();
   if (hub) {
-    const hubResult = await hub.executeTool(toolName, input, workspacePath);
+    const hubResult = await hub.executeTool(toolName, input, workspacePath, signal);
     if (hubResult) {
       return {
         success: hubResult.success,
@@ -90,12 +95,12 @@ export async function executeTool(
   }
 
   // 3. Fallback: 本地执行
-  return executeLocally(toolName, input, workspacePath);
+  return executeLocally(toolName, input, workspacePath, signal);
 }
 
 // ========== 本地执行 (Fallback) ==========
 
-import { exec } from "child_process";
+import { exec, type ChildProcess } from "child_process";
 import { promises as fs } from "fs";
 import path from "path";
 import { promisify } from "util";
@@ -111,8 +116,12 @@ function isCommandSafe(command: string): boolean {
 async function executeLocally(
   toolName: string,
   input: Record<string, string>,
-  workspacePath?: string
+  workspacePath?: string,
+  signal?: AbortSignal
 ): Promise<ToolResult> {
+  if (signal?.aborted) {
+    return { success: false, content: "", error: "Aborted" };
+  }
   // 如果指定了 workspacePath，使用该路径作为项目根目录
   const effectiveRoot = workspacePath || PROJECT_ROOT;
   try {
@@ -127,7 +136,7 @@ async function executeLocally(
         return await listFiles(effectiveRoot);
       case "execute_bash":
       case "execute_command":
-        return await executeBash(input.command, effectiveRoot);
+        return await executeBash(input.command, effectiveRoot, signal);
       case "git_status":
         return await gitStatus(effectiveRoot);
       case "git_diff":
@@ -136,6 +145,9 @@ async function executeLocally(
         return { success: false, content: "", error: `Unknown tool: ${toolName}` };
     }
   } catch (error) {
+    if (signal?.aborted) {
+      return { success: false, content: "", error: "Aborted" };
+    }
     return {
       success: false,
       content: "",
@@ -199,18 +211,49 @@ async function listFiles(root: string = PROJECT_ROOT): Promise<ToolResult> {
   }
 }
 
-async function executeBash(command: string, root: string = PROJECT_ROOT): Promise<ToolResult> {
+async function executeBash(command: string, root: string = PROJECT_ROOT, signal?: AbortSignal): Promise<ToolResult> {
   if (!isCommandSafe(command)) {
     return { success: false, content: "", error: `Command blocked by security policy: "${command}"` };
   }
   try {
-    const { stdout, stderr } = await execAsync(command, {
+    const child: ChildProcess = exec(command, {
       cwd: root,
       timeout: 30000,
       maxBuffer: 1024 * 1024,
     });
-    return { success: true, content: stdout || stderr || "Command executed (no output)" };
+
+    // 中止时 kill 子进程
+    const onAbort = () => child.kill("SIGTERM");
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    const result = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      let stdout = "";
+      let stderr = "";
+      child.stdout?.on("data", (d) => { stdout += d; });
+      child.stderr?.on("data", (d) => { stderr += d; });
+      child.on("close", (code) => {
+        signal?.removeEventListener("abort", onAbort);
+        if (code === 0 || signal?.aborted) {
+          resolve({ stdout, stderr });
+        } else {
+          reject(new Error(stderr || `Exit code ${code}`));
+        }
+      });
+      child.on("error", (err) => {
+        signal?.removeEventListener("abort", onAbort);
+        reject(err);
+      });
+    });
+
+    if (signal?.aborted) {
+      return { success: false, content: "", error: "Aborted" };
+    }
+
+    return { success: true, content: result.stdout || result.stderr || "Command executed (no output)" };
   } catch (error) {
+    if (signal?.aborted) {
+      return { success: false, content: "", error: "Aborted" };
+    }
     return { success: false, content: "", error: `Command failed: ${error instanceof Error ? error.message : String(error)}` };
   }
 }

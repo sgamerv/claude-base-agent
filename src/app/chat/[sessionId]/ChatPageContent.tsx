@@ -33,7 +33,7 @@ export default function ChatPageContent({
   return (
     <div className="flex flex-col h-screen bg-bg-marketing">
       {/* 顶部栏 */}
-      <header className="flex items-center justify-between border-b border-border-subtle px-4 py-3 bg-bg-panel">
+      <header className="flex-shrink-0 flex items-center justify-between border-b border-border-subtle px-4 py-3 bg-bg-panel">
         <div className="flex items-center gap-3">
           <Link
             href="/"
@@ -86,7 +86,9 @@ export default function ChatPageContent({
       </header>
 
       {/* 聊天面板 */}
-      <ChatPanel sessionId={sessionId} />
+      <div className="flex-1 min-h-0">
+        <ChatPanel sessionId={sessionId} />
+      </div>
     </div>
   );
 }

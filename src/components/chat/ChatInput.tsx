@@ -6,9 +6,11 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   agentStatus?: string;
+  onStop?: () => void;
+  isRunning?: boolean;
 }
 
-export default function ChatInput({ onSend, disabled, agentStatus }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled, agentStatus, onStop, isRunning }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -38,12 +40,23 @@ export default function ChatInput({ onSend, disabled, agentStatus }: ChatInputPr
   };
 
   return (
-    <div className="border-t border-border-subtle bg-bg-panel p-4">
+    <div className="flex-shrink-0 border-t border-border-subtle bg-bg-panel p-4">
       {/* Agent 状态指示 */}
       {agentStatus && agentStatus !== "idle" && (
-        <div className="flex items-center gap-2 mb-2 text-xs text-text-muted">
-          <span className="w-2 h-2 rounded-full bg-accent-interactive animate-pulse" />
-          <span>{agentStatus === "thinking" ? "Agent 思考中..." : agentStatus === "executing" ? "Agent 执行中..." : agentStatus}</span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            <span className="w-2 h-2 rounded-full bg-accent-interactive animate-pulse" />
+            <span>{agentStatus === "thinking" ? "Agent 思考中..." : agentStatus === "executing" ? "Agent 执行中..." : agentStatus}</span>
+          </div>
+          {isRunning && onStop && (
+            <button
+              onClick={onStop}
+              className="flex items-center gap-1.5 rounded-lg border border-[rgba(229,72,77,0.3)] bg-[rgba(229,72,77,0.08)] px-3 py-1 text-xs text-status-error hover:bg-[rgba(229,72,77,0.15)] transition-colors"
+            >
+              <span className="w-2.5 h-2.5 rounded-[2px] bg-status-error" />
+              停止
+            </button>
+          )}
         </div>
       )}
 

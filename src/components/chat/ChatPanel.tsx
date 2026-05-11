@@ -33,7 +33,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const { isConnected, sendMessage, replyToAgent, respondToApproval, respondToDiff, getDiffDetail } = useSocket({
+  const { isConnected, sendMessage, replyToAgent, respondToApproval, respondToDiff, getDiffDetail, stopAgent } = useSocket({
     sessionId,
     // 流式文本增量
     onThinkingDelta: (delta) => {
@@ -249,6 +249,15 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
      agentState.status !== "waiting_approval" &&
      agentState.status !== "waiting_diff");
 
+  const isRunning =
+    agentState.status === "thinking" || agentState.status === "executing";
+
+  const handleStop = useCallback(() => {
+    stopAgent();
+    syncAgentState({ status: "idle" });
+    addMessage(createMessage("system", "⏹ Agent 已停止"));
+  }, [stopAgent, syncAgentState, addMessage, createMessage]);
+
   const statusText = {
     idle: "",
     thinking: "Agent 思考中...",
@@ -260,7 +269,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
   }[agentState.status];
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full relative min-h-0">
       {/* 连接状态 */}
       {!isConnected && (
         <div className="bg-status-error text-white text-center text-xs py-1 z-10">
@@ -269,7 +278,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
       )}
 
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">
             <div className="text-4xl mb-4">🤖</div>
@@ -313,7 +322,7 @@ export default function ChatPanel({ sessionId }: ChatPanelProps) {
       </div>
 
       {/* 输入区 */}
-      <ChatInput onSend={handleSend} disabled={isDisabled} agentStatus={statusText} />
+      <ChatInput onSend={handleSend} disabled={isDisabled} agentStatus={statusText} onStop={handleStop} isRunning={isRunning} />
     </div>
   );
 }

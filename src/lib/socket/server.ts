@@ -105,6 +105,33 @@ export function initSocketServer(httpServer: HttpServer): SocketIOServer {
       console.log(`[Socket] ${socket.id} left session: ${sessionId}`);
     });
 
+    // 用户中止 Agent
+    socket.on("stop_agent", (data: { sessionId: string }) => {
+      const session = sessionHistories.get(data.sessionId);
+      if (session) {
+        session.orchestrator.abort();
+
+        // 释放所有挂起的 Promise，让 agent 循环解除阻塞
+        for (const [id, resolve] of pendingUserReplies) {
+          resolve("__stopped__");
+          pendingUserReplies.delete(id);
+        }
+        for (const [id, resolve] of pendingApprovals) {
+          resolve(false);
+          pendingApprovals.delete(id);
+        }
+        for (const [id, resolve] of pendingDiffResponses) {
+          resolve(false);
+          pendingDiffResponses.delete(id);
+        }
+
+        // 清理该 session 的文件变更缓存
+        session.pendingFileChanges.clear();
+
+        console.log(`[Agent] Session ${data.sessionId}: Agent stopped by user`);
+      }
+    });
+
     // 处理用户消息
     socket.on("send_message", async (data: { sessionId: string; message: string }) => {
       const { sessionId, message } = data;

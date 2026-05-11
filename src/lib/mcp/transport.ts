@@ -71,9 +71,12 @@ export class SSETransport implements MCPTransport {
     }));
   }
 
-  async callTool(name: string, args: Record<string, unknown>): Promise<MCPToolResult> {
+  async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<MCPToolResult> {
     if (!this.connected) {
       return { success: false, content: "", error: "SSE Transport not connected" };
+    }
+    if (signal?.aborted) {
+      return { success: false, content: "", error: "Aborted" };
     }
     try {
       const result = await this.client.callTool({ name, arguments: args });
@@ -86,6 +89,9 @@ export class SSETransport implements MCPTransport {
         : String(result.content || "");
       return { success: !result.isError, content, error: result.isError ? content : undefined };
     } catch (error) {
+      if (signal?.aborted) {
+        return { success: false, content: "", error: "Aborted" };
+      }
       return {
         success: false,
         content: "",
@@ -149,8 +155,14 @@ export class SimpleHTTPTransport implements MCPTransport {
     }
   }
 
-  async callTool(name: string, args: Record<string, unknown>): Promise<MCPToolResult> {
+  async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<MCPToolResult> {
     try {
+      // 合并超时和中止信号
+      const timeoutSignal = AbortSignal.timeout(30000);
+      const combined = signal
+        ? AbortSignal.any([timeoutSignal, signal])
+        : timeoutSignal;
+
       const response = await fetch(`${this.url}/call`, {
         method: "POST",
         headers: {
@@ -158,7 +170,7 @@ export class SimpleHTTPTransport implements MCPTransport {
           ...this.headers,
         },
         body: JSON.stringify({ tool: name, args }),
-        signal: AbortSignal.timeout(30000),
+        signal: combined,
       });
 
       if (!response.ok) {
@@ -175,6 +187,9 @@ export class SimpleHTTPTransport implements MCPTransport {
         content: data.content || data.text || JSON.stringify(data),
       };
     } catch (error) {
+      if (signal?.aborted) {
+        return { success: false, content: "", error: "Aborted" };
+      }
       return {
         success: false,
         content: "",

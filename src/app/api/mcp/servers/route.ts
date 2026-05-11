@@ -97,19 +97,24 @@ export async function POST(request: NextRequest) {
       env: body.env,
     };
 
-    // 先测试连接（可选）
+    const hub = getMCPHub();
+
+    // 测试连接模式：连接后立即断开清理，不残留到 Hub
     if (body.testConnection) {
-      const hub = getMCPHub();
       if (hub) {
         try {
-          await hub.addServer(config);
+          await hub.addServer({ ...config, enabled: true });
           const statuses = hub.getConnectionStatuses();
           const status = statuses.find((s) => s.id === config.id);
+          // 测试完毕后移除，避免后续 addServer 时 ID 冲突
+          await hub.removeServer(config.id);
           return NextResponse.json({
             success: true,
             server: { ...config, status: status?.status, toolCount: status?.toolCount },
           });
         } catch (error) {
+          // 连接失败也要清理残留
+          try { await hub.removeServer(config.id); } catch {}
           return NextResponse.json({
             success: false,
             error: `Connection test failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -122,13 +127,17 @@ export async function POST(request: NextRequest) {
     await addServerConfig(config);
 
     // 在 Hub 中添加连接
-    const hub = getMCPHub();
     if (hub && config.enabled) {
       try {
         await hub.addServer(config);
       } catch (error) {
         console.error(`[MCP API] Failed to connect to new server ${config.id}:`, error);
-        // 连接失败不影响保存配置
+        // 连接失败不影响保存配置，但返回警告
+        return NextResponse.json({
+          success: true,
+          server: config,
+          warning: `配置已保存，但连接失败: ${error instanceof Error ? error.message : String(error)}`,
+        }, { status: 201 });
       }
     }
 

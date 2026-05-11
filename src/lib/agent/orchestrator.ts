@@ -67,10 +67,19 @@ const LOOP_MIN_INTERVAL = 1500; // 循环最小间隔 (ms)，避免请求过快�
 export class AgentOrchestrator {
   private apiKey: string;
   private model: string;
+  private abortController: AbortController | null = null;
 
-  constructor(apiKey: string, model: string = "glm-5.1") {
+  constructor(apiKey: string, model: string = "glm-4.7") {
     this.apiKey = apiKey;
     this.model = model;
+  }
+
+  /** 中止当前运行的 Agent 循环 */
+  abort(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
   }
 
   /**
@@ -135,7 +144,14 @@ export class AgentOrchestrator {
     callbacks: AgentCallbacks,
     workspacePath?: string
   ): Promise<void> {
-    // 注意：用户消息已由调用方添加到 messages，这里直接进入代理循环
+    // 动态更新 system prompt（包含 Skill + MCP 工具提示）
+    const systemPrompt = await this.buildSystemPrompt();
+    if (messages.length > 0 && messages[0].role === "system") {
+      messages[0].content = systemPrompt;
+    } else {
+      messages.unshift({ role: "system", content: systemPrompt });
+    }
+
     await this.runAgentLoop(messages, callbacks, workspacePath);
   }
 
@@ -166,16 +182,28 @@ export class AgentOrchestrator {
     workspacePath?: string
   ): Promise<void> {
 
+    this.abortController = new AbortController();
+    const signal = this.abortController.signal;
+
     let iterations = 0;
     let lastLoopTime = 0;
 
     try {
       while (iterations < MAX_ITERATIONS) {
+        if (signal.aborted) {
+          callbacks.onError("Agent 已被用户手动停止");
+          return;
+        }
+
         // 循环最小间隔控制：避免请求过快触发速率限制
         const now = Date.now();
         const elapsed = now - lastLoopTime;
         if (lastLoopTime > 0 && elapsed < LOOP_MIN_INTERVAL) {
           await new Promise((r) => setTimeout(r, LOOP_MIN_INTERVAL - elapsed));
+          if (signal.aborted) {
+            callbacks.onError("Agent 已被用户手动停止");
+            return;
+          }
         }
         lastLoopTime = Date.now();
 
@@ -186,7 +214,7 @@ export class AgentOrchestrator {
         const tools = toGLMTools(skillToolDefs);
 
         // 流式调用 GLM-5.1
-        const { fullContent, toolCalls } = await this.callGLMStreaming(messages, callbacks, tools);
+        const { fullContent, toolCalls } = await this.callGLMStreaming(messages, callbacks, tools, signal);
 
         // 构建助手消息用于历史
         const assistantMsg: GLMMessage = {
@@ -212,8 +240,16 @@ export class AgentOrchestrator {
         // 有工具调用 → 标记思考段结束
         callbacks.onThinkingEnd(fullContent);
 
+        // 用户中止后不再执行工具
+        if (signal.aborted) {
+          callbacks.onError("Agent 已被用户手动停止");
+          return;
+        }
+
         // 处理所有工具调用
         for (const toolCall of toolCalls) {
+          if (signal.aborted) break;
+
           const toolName = toolCall.function.name;
           let toolInput: Record<string, string>;
 
@@ -270,9 +306,11 @@ export class AgentOrchestrator {
           else if (toolName === "write_file") {
             const filePath = toolInput.path || "";
             // 先读取原始文件内容
-            const readResult = await executeTool("read_file", { path: filePath }, workspacePath);
+            const readResult = await executeTool("read_file", { path: filePath }, workspacePath, signal);
             const originalContent = readResult.success ? readResult.content : "";
             const newContent = toolInput.content || "";
+
+            if (signal.aborted) break;
 
             // 只有有实际变更时才需要 Diff 确认
             if (originalContent !== newContent) {
@@ -284,9 +322,11 @@ export class AgentOrchestrator {
                 toolCall.id
               );
 
+              if (signal.aborted) break;
+
               if (accepted) {
                 // 用户接受：执行写入
-                const toolResult = await executeTool(toolName, toolInput, workspacePath);
+                const toolResult = await executeTool(toolName, toolInput, workspacePath, signal);
                 callbacks.onToolResult(toolName, toolResult);
                 result = toolResult.success ? toolResult.content : `Error: ${toolResult.error}`;
               } else {
@@ -296,7 +336,7 @@ export class AgentOrchestrator {
               }
             } else {
               // 无实际变更，直接执行（空写或内容相同）
-              const toolResult = await executeTool(toolName, toolInput, workspacePath);
+              const toolResult = await executeTool(toolName, toolInput, workspacePath, signal);
               callbacks.onToolResult(toolName, toolResult);
               result = toolResult.success ? toolResult.content : `Error: ${toolResult.error}`;
             }
@@ -314,25 +354,28 @@ export class AgentOrchestrator {
 
             if (isDangerous) {
               const approved = await callbacks.onApprovalRequired(command, toolCall.id);
+              if (signal.aborted) break;
               if (!approved) {
                 result = "ERROR: Command blocked by user. The command was not executed.";
               } else {
-                const toolResult = await executeTool(toolName, toolInput, workspacePath);
+                const toolResult = await executeTool(toolName, toolInput, workspacePath, signal);
                 callbacks.onToolResult(toolName, toolResult);
                 result = toolResult.success ? toolResult.content : `Error: ${toolResult.error}`;
               }
             } else {
-              const toolResult = await executeTool(toolName, toolInput, workspacePath);
+              const toolResult = await executeTool(toolName, toolInput, workspacePath, signal);
               callbacks.onToolResult(toolName, toolResult);
               result = toolResult.success ? toolResult.content : `Error: ${toolResult.error}`;
             }
           }
           // 普通工具执行
           else {
-            const toolResult = await executeTool(toolName, toolInput, workspacePath);
+            const toolResult = await executeTool(toolName, toolInput, workspacePath, signal);
             callbacks.onToolResult(toolName, toolResult);
             result = toolResult.success ? toolResult.content : `Error: ${toolResult.error}`;
           }
+
+          if (signal.aborted) break;
 
           // 将工具结果添加到消息历史
           messages.push({
@@ -342,6 +385,12 @@ export class AgentOrchestrator {
           });
         }
 
+        // 中止后退出外层 while
+        if (signal.aborted) {
+          callbacks.onError("Agent 已被用户手动停止");
+          return;
+        }
+
         // 继续循环让 Agent 处理工具结果
       }
 
@@ -349,9 +398,15 @@ export class AgentOrchestrator {
         callbacks.onError("Agent 达到最大迭代次数，任务终止");
       }
     } catch (error) {
-      callbacks.onError(
-        `Agent 执行出错: ${error instanceof Error ? error.message : String(error)}`
-      );
+      if (signal.aborted) {
+        callbacks.onError("Agent 已被用户手动停止");
+      } else {
+        callbacks.onError(
+          `Agent 执行出错: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    } finally {
+      this.abortController = null;
     }
   }
 
@@ -363,9 +418,12 @@ export class AgentOrchestrator {
   private async callGLMStreaming(
     messages: GLMMessage[],
     callbacks: AgentCallbacks,
-    tools: ReturnType<typeof toGLMTools>
+    tools: ReturnType<typeof toGLMTools>,
+    signal?: AbortSignal
   ): Promise<{ fullContent: string; toolCalls: GLMToolCall[] }> {
     for (let attempt = 0; attempt <= API_RETRY_DELAYS.length; attempt++) {
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
       const response = await fetch(GLM_API_URL, {
         method: "POST",
         headers: {
@@ -380,21 +438,43 @@ export class AgentOrchestrator {
           temperature: 0.7,
           stream: true,
         }),
+        signal,
       });
 
       if (!response.ok) {
-        // 429 速率限制：自动退避重试
-        if (response.status === 429 && attempt < API_RETRY_DELAYS.length) {
-          const delay = API_RETRY_DELAYS[attempt];
-          console.log(`[Agent] Rate limited (429), retrying in ${delay}ms (attempt ${attempt + 1}/${API_RETRY_DELAYS.length})`);
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
         const errorText = await response.text();
+
+        // 429：区分余额不足和频率限制
+        if (response.status === 429) {
+          let reason = "请求频率过高";
+          try {
+            const parsed = JSON.parse(errorText);
+            if (parsed?.error?.code === "1113") {
+              reason = "余额不足或无可用资源包，请前往 open.bigmodel.cn 充值";
+            } else if (parsed?.error?.message) {
+              reason = parsed.error.message;
+            }
+          } catch {}
+
+          // 余额不足等非临时错误直接抛出，不重试
+          if (errorText.includes('"1113"')) {
+            throw new Error(`GLM API 错误: ${reason}`);
+          }
+
+          // 频率限制：退避重试
+          if (attempt < API_RETRY_DELAYS.length) {
+            const delay = API_RETRY_DELAYS[attempt];
+            console.log(`[Agent] Rate limited (429), retrying in ${delay}ms (attempt ${attempt + 1}/${API_RETRY_DELAYS.length})`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+          throw new Error(`GLM API 请求频率受限: ${reason}`);
+        }
+
         throw new Error(`GLM API error (${response.status}): ${errorText}`);
       }
 
-      return this.parseGLMStream(response, callbacks);
+      return this.parseGLMStream(response, callbacks, signal);
     }
 
     // 不应到达这里，但以防万一
@@ -406,7 +486,8 @@ export class AgentOrchestrator {
    */
   private async parseGLMStream(
     response: Response,
-    callbacks: AgentCallbacks
+    callbacks: AgentCallbacks,
+    signal?: AbortSignal
   ): Promise<{ fullContent: string; toolCalls: GLMToolCall[] }> {
 
     let fullContent = "";
@@ -419,6 +500,10 @@ export class AgentOrchestrator {
     let buffer = "";
 
     while (true) {
+      if (signal?.aborted) {
+        reader.cancel().catch(() => {});
+        break;
+      }
       const { done, value } = await reader.read();
       if (done) break;
 

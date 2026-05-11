@@ -71,7 +71,7 @@ export interface MCPTransport {
   /** 获取工具列表 */
   listTools(): Promise<MCPToolInfo[]>;
   /** 调用工具 */
-  callTool(name: string, args: Record<string, unknown>): Promise<MCPToolResult>;
+  callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<MCPToolResult>;
   /** 健康检查 */
   healthCheck(): Promise<boolean>;
 }

@@ -197,11 +197,12 @@ class MCPHub {
   async executeTool(
     toolName: string,
     input: Record<string, unknown>,
-    workspacePath?: string
+    workspacePath?: string,
+    signal?: AbortSignal
   ): Promise<MCPToolResult | null> {
     // 检查是否为外部 MCP 工具（含 __ 前缀）
     if (toolName.includes("__")) {
-      return this.executeExternalTool(toolName, input);
+      return this.executeExternalTool(toolName, input, signal);
     }
 
     // 内置 MCP 工具
@@ -219,7 +220,8 @@ class MCPHub {
    */
   private async executeExternalTool(
     toolName: string,
-    input: Record<string, unknown>
+    input: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<MCPToolResult> {
     // 解析 serverId 和原始工具名
     const separatorIndex = toolName.indexOf("__");
@@ -237,7 +239,7 @@ class MCPHub {
       };
     }
 
-    const result = await transport.callTool(originalToolName, input);
+    const result = await transport.callTool(originalToolName, input, signal);
 
     // 在结果中附加来源信息
     if (result.success) {
